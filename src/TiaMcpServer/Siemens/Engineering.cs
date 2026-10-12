@@ -17,21 +17,32 @@ namespace TiaMcpServer.Siemens
 
         public static Assembly? Resolver(object sender, ResolveEventArgs args)
         {
-            var assemblyName = new AssemblyName(args.Name);
-            if (!assemblyName.Name.StartsWith("Siemens.Engineering"))
+            // An exception escaping an AssemblyResolve handler surfaces at the load site and can take
+            // the whole server down. Report "not resolved" instead and let the CLR probe on.
+            try
             {
+                var assemblyName = new AssemblyName(args.Name);
+                if (assemblyName.Name?.StartsWith("Siemens.Engineering", StringComparison.Ordinal) != true)
+                {
+                    return null;
+                }
+
+                var tiaInstallPath = GetTiaPortalInstallPath();
+                if (string.IsNullOrEmpty(tiaInstallPath))
+                {
+                    return null;
+                }
+
+                var assemblyPath = FindAssembly(tiaInstallPath!, TiaMajorVersion, assemblyName.Name + ".dll");
+
+                return assemblyPath != null ? Assembly.LoadFrom(assemblyPath) : null;
+            }
+            catch (Exception ex)
+            {
+                // stderr only: stdout is the MCP stdio channel.
+                Console.Error.WriteLine($"[TiaMcpServer] Could not resolve '{args.Name}': {ex.Message}");
                 return null;
             }
-
-            var tiaInstallPath = GetTiaPortalInstallPath();
-            if (string.IsNullOrEmpty(tiaInstallPath))
-            {
-                return null;
-            }
-
-            var assemblyPath = FindAssembly(tiaInstallPath!, TiaMajorVersion, assemblyName.Name + ".dll");
-
-            return assemblyPath != null ? Assembly.LoadFrom(assemblyPath) : null;
         }
 
         /// <summary>
@@ -64,7 +75,17 @@ namespace TiaMcpServer.Siemens
 
         private static string? GetTiaPortalInstallPath()
         {
-            var registryPath = GetTiaPortalInstallPath(TiaMajorVersion);
+            string? registryPath = null;
+            try
+            {
+                registryPath = GetTiaPortalInstallPath(TiaMajorVersion);
+            }
+            catch (Exception ex)
+            {
+                // Restricted hosts may deny registry access - fall through to the environment variable.
+                Console.Error.WriteLine($"[TiaMcpServer] Could not read the TIA Portal install path from the registry: {ex.Message}");
+            }
+
             if (!string.IsNullOrEmpty(registryPath))
             {
                 return registryPath;
