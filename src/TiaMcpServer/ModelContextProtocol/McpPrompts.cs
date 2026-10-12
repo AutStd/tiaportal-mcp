@@ -648,7 +648,7 @@ Use the GetSoftwareInfo tool with these parameters:
         [McpServerPrompt(Name = "CompileSoftware"), Description("Compile a PLC software and list every compiler message")]
         public static string CompileSoftware(string softwarePath, string password = "")
         {
-            return $@"Compile the software and report every compiler message with the object it belongs to, so errors can be fixed without re-reading the whole PLC. Warnings are reported as a successful compile with detail; only errors fail the call.
+            return $@"Compile the software and report every compiler message with the object it belongs to, so errors can be fixed without re-reading the whole PLC. Warnings are reported as a successful compile with detail; errors set meta.success to false and the call still returns every message.
 
 Common parameter values:
 |- softwarePath: defines the path in the project structure to the software

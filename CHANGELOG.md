@@ -12,6 +12,11 @@
 
 ### Changed
 
+- __`CompileSoftware` returns the full result on compile errors__: it used to throw an exception naming only
+  the first 5 errors, discarding the message list it had already built. It now returns `Messages[]`,
+  `ErrorCount` and `WarningCount` with `meta.success = false` and does not throw, so every error location
+  is available in one call. Clients must check `meta.success` / `ErrorCount` instead of an error result.
+
 - __Breaking: `GetBlockSource` / `GetTypeSource` replaced by one inline reader per kind__: the two tools took
   `format: document | xml` and fell back to XML silently, and "Source" in their name meant source documents
   while every `Export*Source*` tool means compilable external source files. They now follow the names of the

@@ -52,7 +52,7 @@ namespace TiaMcpServer.ModelContextProtocol
         }
 
         [McpServerTool(Name = "CompileSoftware", Title = "Compile software", Destructive = false, Idempotent = true, OpenWorld = false, UseStructuredContent = true),
-         Description("Compile the PLC software and report every compiler message with the object it belongs to, so errors can be fixed without re-reading the whole PLC. Warnings are reported as a successful compile with detail; only errors fail the call")]
+         Description("Compile the PLC software and report every compiler message with the object it belongs to, so errors can be fixed without re-reading the whole PLC. Warnings are reported as a successful compile with detail; errors set meta.success to false and the call still returns every message")]
         public static ResponseCompileSoftware CompileSoftware(
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
             [Description("password: the password to access adminsitration, default: no password")] string password = "")
@@ -74,7 +74,7 @@ namespace TiaMcpServer.ModelContextProtocol
 
                 var response = new ResponseCompileSoftware
                 {
-                    Message = $"Compiling '{softwarePath}' finished with state '{state}': " +
+                    Message = $"Compiling '{softwarePath}' {(failed ? "failed" : "finished")} with state '{state}': " +
                               $"{result.ErrorCount} error(s), {result.WarningCount} warning(s)",
                     State = state,
                     ErrorCount = result.ErrorCount,
