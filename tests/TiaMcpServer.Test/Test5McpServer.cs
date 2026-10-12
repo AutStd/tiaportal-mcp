@@ -145,6 +145,43 @@ namespace TiaMcpServer.Test
         }
 
         [TestMethod]
+        [DataRow(Settings.Project1ProjectPath)]
+        public void Test_510_McpServer_GetOpenLibraries(string projectPath)
+        {
+            McpServer.Connect();
+            McpServer.OpenProject(projectPath);
+
+            var response = McpServer.GetOpenLibraries();
+            WriteMessage("McpServer.GetOpenLibraries()", response);
+
+            var items = response?.Items?.ToList();
+            items?.ForEach(item => Console.WriteLine($"- {item.Kind}: '{item.Name}' {item.Path} ({item.Attributes?.Count()} attributes)"));
+
+            McpServer.CloseProject();
+
+            Assert.IsNotNull(items, "McpServer returned no items");
+            Assert.IsTrue(items.Any(item => item.Kind == "Project"), "Project library is missing");
+        }
+
+        [TestMethod]
+        [DataRow(Settings.Project1ProjectPath)]
+        public void Test_511_McpServer_GetReferencedLibraries(string projectPath)
+        {
+            McpServer.Connect();
+            McpServer.OpenProject(projectPath);
+
+            var response = McpServer.GetReferencedLibraries();
+            WriteMessage("McpServer.GetReferencedLibraries()", response);
+
+            var items = response?.Items?.ToList();
+            items?.ForEach(item => Console.WriteLine($"- '{item.Name}' ({item.OpenLibraryKind ?? "not open"}): {item.TypeVersionCount} type version(s)"));
+
+            McpServer.CloseProject();
+
+            Assert.IsNotNull(items, "McpServer returned no items");
+        }
+
+        [TestMethod]
         [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0)]
         //[DataRow(Settings.Session1ProjectPath, Settings.Session1PlcSoftwarePath)]
         public void Test_505_McpServer_GetSoftwareInfo(string projectPath, string softwarePath)

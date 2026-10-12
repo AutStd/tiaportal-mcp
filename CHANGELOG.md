@@ -4,6 +4,15 @@
 
 ### Added
 
+- __`GetOpenLibraries` and `GetReferencedLibraries`__: the first library support, read-only.
+  `GetOpenLibraries` lists the project library and the global libraries open in TIA Portal (user,
+  system, corporate) with `kind`, `name`, `path`, `isReadOnly`, `isModified` and the full attribute
+  list. Global libraries belong to the TIA Portal instance, not to the project.
+  `GetReferencedLibraries` reads the project library and groups its type versions by the library
+  they were generated from (`LibraryTypeVersion.OriginalLibrary`), reporting version number, default
+  flag and state per type version. It also names libraries that are no longer open, and marks those
+  that are open with their kind and path. Neither tool takes parameters.
+
 - __Preset tool arguments__: the new command line arguments `--project-path`, `--software-path`,
   `--export-path`, `--preserve-path` and `--with-dependencies` (the last two are flags, like `--allow-write`) preset the `path`, `softwarePath`, `exportPath`, `preservePath` and `withDependencies` arguments of every tool
   that declares them. A preset argument is no longer `required` in the tool schema and is filled in when

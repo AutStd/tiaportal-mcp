@@ -631,6 +631,26 @@ Use the GetDevices tool (it takes no parameters).";
 
         #endregion
 
+        #region Library Templates
+
+        [McpServerPrompt(Name = "GetOpenLibraries"), Description("List the project library and the open global libraries")]
+        public static string GetOpenLibraries()
+        {
+            return $@"Get the libraries that are open in TIA Portal: the project library and the global libraries, with name, path, state and attributes.
+
+Use the GetOpenLibraries tool (it takes no parameters).";
+        }
+
+        [McpServerPrompt(Name = "GetReferencedLibraries"), Description("List the libraries whose types are used in the project")]
+        public static string GetReferencedLibraries()
+        {
+            return $@"Get the libraries whose types are used in the current project, with the type versions taken from each library.
+
+Use the GetReferencedLibraries tool (it takes no parameters).";
+        }
+
+        #endregion
+
         #region Software Templates
 
         [McpServerPrompt(Name = "GetSoftwareInfo"), Description("Show details of one PLC software")]

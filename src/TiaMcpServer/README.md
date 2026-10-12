@@ -72,6 +72,7 @@ The TiaMcpServer project provides the following functionality:
 *   **Working with projects and sessions:** The `GetProject`, `OpenProject`, `SaveProject`, `SaveAsProject`, and `CloseProject` tools allow the LLM to work with TIA Portal projects and sessions.
 *   **Working with devices:** The `GetProjectTree`, `GetDeviceInfo`, `GetDeviceItemInfo`, and `GetDevices` tools allow the LLM to get information about the devices in a project.
 *   **Working with PLC software:** The `GetSoftwareInfo` and `CompileSoftware` tools allow the LLM to get information about and compile PLC software. `GetSoftwareTree` renders the whole PLC software - program blocks, PLC data types, PLC tags, watch and force tables and external source files - and takes a `sections` argument to narrow the output.
+*   **Working with libraries:** `GetOpenLibraries` lists the project library and the global libraries that are open in TIA Portal, with name, path, state and all attributes. Global libraries belong to the TIA Portal instance, not to the project. `GetReferencedLibraries` reads the project library and groups its type versions by the library they came from (`LibraryTypeVersion.OriginalLibrary`), so it also reports libraries that are no longer open.
 *   **Working with blocks:** The `GetBlockInfo`, `GetBlocks`, `GetBlocksWithHierarchy`, `ExportXmlBlock`, `ImportXmlBlock`, and `ExportXmlBlocks` tools allow the LLM to work with blocks.
     - `ExportXmlBlock` expects `blockPath` to be a fully qualified path like `Group/Subgroup/Name`. Passing just a name is ambiguous; the tool fails with an error result and may suggest likely full paths based on project contents.
 *   **Working with types:** The `GetTypeInfo`, `GetTypes`, `ExportXmlType`, `ImportXmlType`, and `ExportXmlTypes` tools allow the LLM to work with types.
@@ -246,6 +247,15 @@ capability is not listed here, it is not wired up yet.
 | `CompilerResult.State` / `.ErrorCount` / `.WarningCount` / `.Messages`, and `CompilerResultMessage.Path` / `.Description` / `.State` / `.Messages` (recursive) | The structured compile report     |
 | `IEngineeringObject.GetService<CrossReferenceService>()`, `CrossReferenceFilter`                                                                               | `GetCrossReferences`, `WhereUsed` |
 
+### Libraries
+
+| Openness member                                                                                                                                                                  | Used for                                                                           |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `ProjectBase.ProjectLibrary`                                                                                                                                                     | `GetOpenLibraries` (the project library), `GetReferencedLibraries` (its types)     |
+| `TiaPortal.GlobalLibraries`, `GlobalLibrary.Name` / `.Path` / `.IsReadOnly` / `.IsModified`, `UserGlobalLibrary` / `SystemGlobalLibrary` / `CorporateGlobalLibrary`             | `GetOpenLibraries` (the open global libraries; they belong to the portal instance) |
+| `ILibrary.TypeFolder`, `LibraryTypeFolder.Types` / `.Folders`, `LibraryType.Versions`                                                                                            | Walking the project library for `GetReferencedLibraries`                           |
+| `LibraryTypeVersion.OriginalLibrary` / `.VersionNumber` / `.IsDefault` / `.State`                                                                                                | The library each type version came from, and its version and state                 |
+
 ### Document export and import results
 
 | Openness member                                                                                    | Used for                                      |
@@ -266,7 +276,7 @@ Recorded so the same research is not repeated.
 | `PlcSoftware.CompareTo` / `CompareToOnline`, `CompareResultElement`                           | No diff tool yet; today the story is export as documents and diff outside the server                                                                                        |
 | `FingerprintProvider.GetFingerprints()`, `PlcBlock.CodeModifiedDate` / `.CompileDate`         | No change-detection tool yet; this is the natural cache key for `FindInCode`                                                                                                |
 | `ProjectBase.HistoryEntries`, `.IsModified`, `.LastModified`                                  | No project history tool yet                                                                                                                                                 |
-| `ProjectLibrary`, `GlobalLibraries`, `MasterCopy`, `LibraryTypeVersion.FindInstances`         | Libraries are unimplemented; `CreateFrom(MasterCopy)` would also give a native copy path, replacing the export-import-delete composition behind `CopyBlock` and `MoveBlock` |
+| `MasterCopy`, `LibraryTypeVersion.FindInstances`                                              | Master copies unimplemented; `CreateFrom(MasterCopy)` would also give a native copy path, replacing the export-import-delete composition behind `CopyBlock` and `MoveBlock` |
 | `PlcBlockProtectionProvider.Protect` / `.Unprotect`                                           | Know-how protection is reported but never changed                                                                                                                           |
 | `IEngineeringObject.GetInvocationInfos()` / `Invoke(...)`                                     | A generic escape hatch to any Openness member - rejected, because it would bypass the `--allow-write` gate                                                                  |
 | `PlcSimulationSettingsProvider`, `VirtualPlcSettingsProvider`                                 | Compilation settings only; Openness has no PLCSIM start or stop API                                                                                                         |

@@ -54,8 +54,9 @@ the gap is explicit rather than implied.
   and module state, PLCSIM simulation. Needs real hardware or a simulator to test.
 - [ ] __Hardware and network configuration__: create and delete devices, GSD import, plug and
   unplug modules, subnets, nodes, IO systems, connections.
-- [ ] __Libraries__: project and global libraries, master copies, library types and versioning,
-  `UpdateProject`. Note that `CreateFrom(MasterCopy)` already exists on several compositions, so
+- [ ] __Libraries__: listing open libraries (`GetOpenLibraries`) and the libraries a project's types
+  come from (`GetReferencedLibraries`) is done. Still open: library contents (folders, types,
+  master copies), instance counts via `FindInstances`, versioning, `UpdateProject`. Note that `CreateFrom(MasterCopy)` already exists on several compositions, so
   this would also unlock a native copy path for blocks and types.
 - [ ] __HMI__: screens, HMI tags, text lists, cycles, connections. Today `HmiTarget` and
   `HmiSoftware` are only printed by name in the project tree.

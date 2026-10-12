@@ -314,6 +314,68 @@ namespace TiaMcpServer.ModelContextProtocol
     {
         public IEnumerable<ResponseDeviceInfo>? Items { get; set; }
     }
+
+    #region libraries
+
+    public class ResponseLibraryInfo : ResponseAttributes
+    {
+        /// <summary>Project, UserGlobal, SystemGlobal, CorporateGlobal or Global.</summary>
+        public string? Kind { get; set; }
+
+        public string? Name { get; set; }
+
+        /// <summary>File path of a global library; null for the project library.</summary>
+        public string? Path { get; set; }
+
+        public bool? IsReadOnly { get; set; }
+
+        public bool? IsModified { get; set; }
+    }
+
+    public class ResponseLibraries : ResponseMessage
+    {
+        public IEnumerable<ResponseLibraryInfo>? Items { get; set; }
+    }
+
+    public class ResponseReferencedLibraryType
+    {
+        /// <summary>Folder of the type in the project library, empty for the root.</summary>
+        public string? FolderPath { get; set; }
+
+        public string? TypeName { get; set; }
+
+        public string? VersionNumber { get; set; }
+
+        public bool IsDefault { get; set; }
+
+        public string? State { get; set; }
+    }
+
+    public class ResponseReferencedLibrary
+    {
+        /// <summary>Name of the project or library the types were generated from.</summary>
+        public string? Name { get; set; }
+
+        /// <summary>
+        /// Kind of the open library with this name (UserGlobal, SystemGlobal, CorporateGlobal), or
+        /// null when no library of that name is open, which also holds for the project itself.
+        /// </summary>
+        public string? OpenLibraryKind { get; set; }
+
+        /// <summary>File path of the open global library with this name, when there is one.</summary>
+        public string? OpenLibraryPath { get; set; }
+
+        public int TypeVersionCount { get; set; }
+
+        public IEnumerable<ResponseReferencedLibraryType>? Types { get; set; }
+    }
+
+    public class ResponseReferencedLibraries : ResponseMessage
+    {
+        public IEnumerable<ResponseReferencedLibrary>? Items { get; set; }
+    }
+
+    #endregion
     
     public class ResponseCompileSoftware : ResponseMessage
     {
