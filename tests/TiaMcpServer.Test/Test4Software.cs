@@ -966,9 +966,132 @@ namespace TiaMcpServer.Test
         }
 
         [TestMethod]
-        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "document")]
         [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "xml")]
-        public void Test_441_GetBlockSource(string projectPath, string softwarePath, string format)
+        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "source")]
+        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "documents")]
+        public void Test_441_GetBlockAs(string projectPath, string softwarePath, string kind)
+        {
+            if (_portal == null)
+            {
+                Assert.Fail("TiaPortal instance is not initialized");
+            }
+
+            Assert.IsTrue(Common.OpenProject(_portal, projectPath), "Failed to open the project");
+
+            try
+            {
+                var candidates = _portal.GetBlocks(softwarePath).Where(b => b.IsConsistent).ToList();
+
+                if (candidates.Count == 0)
+                {
+                    Assert.Inconclusive($"'{softwarePath}' holds no consistent block");
+                }
+
+                // LAD/FBD/GRAPH have no source form and STL/mixed have no document. Both are
+                // rejected on purpose, so walk the blocks until one has the requested form.
+                foreach (var block in candidates)
+                {
+                    var blockPath = _portal.GetBlockPath(block);
+                    SourceTextResult result;
+
+                    try
+                    {
+                        result = kind switch
+                        {
+                            "xml" => _portal.GetXmlBlock(softwarePath, blockPath),
+                            "source" => _portal.GetSourceBlock(softwarePath, blockPath),
+                            _ => _portal.GetDocumentsBlock(softwarePath, blockPath)
+                        };
+                    }
+                    catch (PortalException pex) when (pex.Code == PortalErrorCode.NotSupported)
+                    {
+                        continue;
+                    }
+
+                    Assert.AreEqual(kind, result.Format, "The reader returned another kind than requested");
+
+                    Console.WriteLine($"{result.Path} [{result.Format}] {result.TotalChars} chars, files: {string.Join(", ", result.FileNames)}");
+                    Console.WriteLine(result.Text.Length > 600 ? result.Text.Substring(0, 600) : result.Text);
+
+                    Assert.IsFalse(string.IsNullOrWhiteSpace(result.Text), "No source text was returned");
+                    StringAssert.Contains(result.Text, block.Name, "The source does not mention the block name");
+
+                    return;
+                }
+
+                Assert.Inconclusive($"No consistent block of '{softwarePath}' has a '{kind}' form");
+            }
+            finally
+            {
+                Common.CloseProject(_portal, projectPath);
+            }
+        }
+
+        [TestMethod]
+        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "xml", null)]
+        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "source", ".udt")]
+        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "documents", null)]
+        public void Test_444_GetTypeAs(string projectPath, string softwarePath, string kind, string? expectedExtension)
+        {
+            if (_portal == null)
+            {
+                Assert.Fail("TiaPortal instance is not initialized");
+            }
+
+            Assert.IsTrue(Common.OpenProject(_portal, projectPath), "Failed to open the project");
+
+            try
+            {
+                var type = _portal.GetTypes(softwarePath).FirstOrDefault(t => t.IsConsistent);
+
+                if (type == null)
+                {
+                    Assert.Inconclusive($"'{softwarePath}' holds no consistent PLC data type");
+                }
+
+                var typePath = _portal.GetTypePath(type!);
+                SourceTextResult result;
+
+                try
+                {
+                    result = kind switch
+                    {
+                        "xml" => _portal.GetXmlType(softwarePath, typePath),
+                        "source" => _portal.GetSourceType(softwarePath, typePath),
+                        _ => _portal.GetDocumentsType(softwarePath, typePath)
+                    };
+                }
+                catch (PortalException pex) when (kind == "documents" && pex.Code == PortalErrorCode.NotSupported)
+                {
+                    // Type documents need TIA Portal V21; older versions reject them on purpose.
+                    Assert.Inconclusive($"No type documents on this TIA Portal version: {pex.Message}");
+
+                    return;
+                }
+
+                Console.WriteLine($"{result.Path} [{result.Format}] {result.TotalChars} chars, files: {string.Join(", ", result.FileNames)}");
+
+                Assert.AreEqual(kind, result.Format, "The reader returned another kind than requested");
+                Assert.IsFalse(string.IsNullOrWhiteSpace(result.Text), "No text was returned");
+                StringAssert.Contains(result.Text, type!.Name, "The text does not mention the type name");
+
+                if (expectedExtension != null)
+                {
+                    Assert.IsTrue(
+                        result.FileNames.Any(f => f.EndsWith(expectedExtension, StringComparison.OrdinalIgnoreCase)),
+                        $"Expected a '{expectedExtension}' file, got: {string.Join(", ", result.FileNames)}");
+                }
+            }
+            finally
+            {
+                Common.CloseProject(_portal, projectPath);
+            }
+        }
+
+        /// <summary>Truncation must cut on a line boundary and report the full length.</summary>
+        [TestMethod]
+        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0)]
+        public void Test_445_GetXmlBlockTruncatesOnLineBoundary(string projectPath, string softwarePath)
         {
             if (_portal == null)
             {
@@ -986,13 +1109,80 @@ namespace TiaMcpServer.Test
                     Assert.Inconclusive($"'{softwarePath}' holds no consistent block");
                 }
 
-                var result = _portal.GetBlockSource(softwarePath, _portal.GetBlockPath(block!), format);
+                var result = _portal.GetXmlBlock(softwarePath, _portal.GetBlockPath(block!), maxChars: 200);
 
-                Console.WriteLine($"{result.Path} [{result.Format}] {result.TotalChars} chars, files: {string.Join(", ", result.FileNames)}");
-                Console.WriteLine(result.Text.Length > 600 ? result.Text.Substring(0, 600) : result.Text);
+                Assert.IsTrue(result.Truncated, "A SimaticML export is longer than 200 characters");
+                Assert.IsTrue(result.TotalChars > 200, "TotalChars must report the untruncated length");
+                Assert.IsTrue(result.Text.Length <= 200, "The text exceeds maxChars");
+            }
+            finally
+            {
+                Common.CloseProject(_portal, projectPath);
+            }
+        }
 
-                Assert.IsFalse(string.IsNullOrWhiteSpace(result.Text), "No source text was returned");
-                StringAssert.Contains(result.Text, block!.Name, "The source does not mention the block name");
+        /// <summary>LAD, FBD and GRAPH blocks have no external source form and must be rejected, not converted.</summary>
+        [TestMethod]
+        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0)]
+        public void Test_446_GetSourceBlockRejectsBlockWithoutSourceForm(string projectPath, string softwarePath)
+        {
+            if (_portal == null)
+            {
+                Assert.Fail("TiaPortal instance is not initialized");
+            }
+
+            Assert.IsTrue(Common.OpenProject(_portal, projectPath), "Failed to open the project");
+
+            try
+            {
+                var block = _portal.GetBlocks(softwarePath)
+                    .FirstOrDefault(b => b.IsConsistent && b.ProgrammingLanguage.ToString() is "LAD" or "FBD" or "GRAPH");
+
+                if (block == null)
+                {
+                    Assert.Inconclusive($"'{softwarePath}' holds no consistent LAD, FBD or GRAPH block");
+                }
+
+                var blockPath = _portal.GetBlockPath(block!);
+
+                var exception = Assert.ThrowsException<PortalException>(() => _portal.GetSourceBlock(softwarePath, blockPath));
+
+                Assert.AreEqual(PortalErrorCode.NotSupported, exception.Code);
+            }
+            finally
+            {
+                Common.CloseProject(_portal, projectPath);
+            }
+        }
+
+        /// <summary>STL blocks have no source document: the reader says so instead of returning XML.</summary>
+        [TestMethod]
+        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0)]
+        public void Test_447_GetDocumentsBlockRejectsStlWithoutFallback(string projectPath, string softwarePath)
+        {
+            if (_portal == null)
+            {
+                Assert.Fail("TiaPortal instance is not initialized");
+            }
+
+            Assert.IsTrue(Common.OpenProject(_portal, projectPath), "Failed to open the project");
+
+            try
+            {
+                var block = _portal.GetBlocks(softwarePath)
+                    .FirstOrDefault(b => b.IsConsistent && b.ProgrammingLanguage.ToString() == "STL");
+
+                if (block == null)
+                {
+                    Assert.Inconclusive($"'{softwarePath}' holds no consistent STL block");
+                }
+
+                var blockPath = _portal.GetBlockPath(block!);
+
+                var exception = Assert.ThrowsException<PortalException>(() => _portal.GetDocumentsBlock(softwarePath, blockPath));
+
+                Assert.AreEqual(PortalErrorCode.NotSupported, exception.Code);
+                StringAssert.Contains(exception.Message, "GetXmlBlock", "The error must point to the XML reader");
             }
             finally
             {
@@ -1003,7 +1193,7 @@ namespace TiaMcpServer.Test
         /// <summary>Reading source must not leave scratch directories behind.</summary>
         [TestMethod]
         [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0)]
-        public void Test_442_GetBlockSourceCleansUp(string projectPath, string softwarePath)
+        public void Test_442_GetXmlBlockCleansUp(string projectPath, string softwarePath)
         {
             if (_portal == null)
             {
@@ -1024,11 +1214,11 @@ namespace TiaMcpServer.Test
                     Assert.Inconclusive($"'{softwarePath}' holds no consistent block");
                 }
 
-                _portal.GetBlockSource(softwarePath, _portal.GetBlockPath(block!));
+                _portal.GetXmlBlock(softwarePath, _portal.GetBlockPath(block!));
 
                 var after = Directory.Exists(scratchRoot) ? Directory.GetDirectories(scratchRoot).Length : 0;
 
-                Assert.AreEqual(before, after, "GetBlockSource left a scratch directory behind");
+                Assert.AreEqual(before, after, "GetXmlBlock left a scratch directory behind");
             }
             finally
             {

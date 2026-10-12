@@ -822,7 +822,7 @@ Use the ImportXmlBlock tool with these parameters:
         [McpServerPrompt(Name = "GetBlockInterface"), Description("List the members of a data block with type and attributes")]
         public static string GetBlockInterface(string softwarePath, string blockPath)
         {
-            return $@"List the members of a data block with their data type and every attribute TIA Portal reports. Needs no export and works on inconsistent blocks. Data blocks only: Openness offers no interface accessor for FB, FC or OB, whose declarations come from 'GetBlockSource' instead.
+            return $@"List the members of a data block with their data type and every attribute TIA Portal reports. Needs no export and works on inconsistent blocks. Data blocks only: Openness offers no interface accessor for FB, FC or OB, whose declarations come from 'GetSourceBlock' or 'GetDocumentsBlock' instead.
 
 Common parameter values:
 - softwarePath: defines the path in the project structure to the software
@@ -1644,39 +1644,103 @@ Use the ExportAsDocuments tool with these parameters:
 
         #region Source File Templates
 
-        [McpServerPrompt(Name = "GetBlockSource"), Description("Show the source text of one block without exporting a file")]
-        public static string GetBlockSource(string softwarePath, string blockPath, string format = "document", string maxChars = "40000")
+        [McpServerPrompt(Name = "GetXmlBlock"), Description("Show one block as SimaticML XML without exporting a file")]
+        public static string GetXmlBlock(string softwarePath, string blockPath, string maxChars = "40000")
         {
-            return $@"Return the source text of one program block directly, instead of exporting a file and reading it back. 'document' gives readable SCL/LAD/STL (SIMATIC Source Document, V20+); objects TIA Portal cannot represent that way - STL and mixed-language blocks - fall back to XML automatically, and the response says which format was produced.
+            return $@"Return one program block as SimaticML XML text directly, instead of exporting a file and reading it back. Works for every consistent block, whatever its language.
 
 Common parameter values:
 - softwarePath: defines the path in the project structure to the PLC software
 - blockPath: root-relative path of the block, e.g. '0_OBs/Main'. Use 'ResolveObjectPath' if you only know the name
-- format: 'document' (default) for readable source text, or 'xml' for the SimaticML export
 - maxChars: truncate the text at this many characters, on a line boundary (default 40000)
 
-Use the GetBlockSource tool with these parameters:
+Use the GetXmlBlock tool with these parameters:
 - softwarePath: {softwarePath}
 - blockPath: {blockPath}
-- format: {format}
 - maxChars: {maxChars}";
         }
 
-        [McpServerPrompt(Name = "GetTypeSource"), Description("Show the source text of one PLC data type without exporting a file")]
-        public static string GetTypeSource(string softwarePath, string typePath, string format = "document", string maxChars = "40000")
+        [McpServerPrompt(Name = "GetSourceBlock"), Description("Show one block as external source text (.scl/.db/.awl) without exporting a file")]
+        public static string GetSourceBlock(string softwarePath, string blockPath, string withDependencies = "false", string maxChars = "40000")
         {
-            return $@"Return the source text of one PLC data type directly, instead of exporting a file and reading it back. 'document' gives the readable TYPE ... END_TYPE declaration (SIMATIC Source Document, requires TIA Portal V21); 'xml' gives the SimaticML export.
+            return $@"Return one program block as TIA Portal external source text ('.scl' for SCL, '.db' for data blocks, '.awl' for STL) directly, in the format the compiler reads back. LAD, FBD and GRAPH blocks have no source form and are rejected - use GetXmlBlock or GetDocumentsBlock for those.
+
+Common parameter values:
+- softwarePath: defines the path in the project structure to the PLC software
+- blockPath: root-relative path of the block, e.g. '0_OBs/Main'. Use 'ResolveObjectPath' if you only know the name
+- withDependencies: also include every object the block uses, so the text compiles on its own. Default false
+- maxChars: truncate the text at this many characters, on a line boundary (default 40000)
+
+Use the GetSourceBlock tool with these parameters:
+- softwarePath: {softwarePath}
+- blockPath: {blockPath}
+- withDependencies: {NormalizeBool(withDependencies)}
+- maxChars: {maxChars}";
+        }
+
+        [McpServerPrompt(Name = "GetDocumentsBlock"), Description("Show one block as SIMATIC Source Document text without exporting a file")]
+        public static string GetDocumentsBlock(string softwarePath, string blockPath, string maxChars = "40000")
+        {
+            return $@"Return one program block as readable SIMATIC Source Document text (.s7dcl/.s7res, TIA Portal V20+) directly. STL and mixed-language blocks have no source document and are rejected - use GetXmlBlock or GetSourceBlock for those.
+
+Common parameter values:
+- softwarePath: defines the path in the project structure to the PLC software
+- blockPath: root-relative path of the block, e.g. '0_OBs/Main'. Use 'ResolveObjectPath' if you only know the name
+- maxChars: truncate the text at this many characters, on a line boundary (default 40000)
+
+Use the GetDocumentsBlock tool with these parameters:
+- softwarePath: {softwarePath}
+- blockPath: {blockPath}
+- maxChars: {maxChars}";
+        }
+
+        [McpServerPrompt(Name = "GetXmlType"), Description("Show one PLC data type as SimaticML XML without exporting a file")]
+        public static string GetXmlType(string softwarePath, string typePath, string maxChars = "40000")
+        {
+            return $@"Return one PLC data type as SimaticML XML text directly, instead of exporting a file and reading it back.
 
 Common parameter values:
 - softwarePath: defines the path in the project structure to the PLC software
 - typePath: root-relative path of the PLC data type, e.g. 'Common/BtnTyp_X'. Use 'ResolveObjectPath' if you only know the name
-- format: 'document' (default) for readable source text, or 'xml' for the SimaticML export
 - maxChars: truncate the text at this many characters, on a line boundary (default 40000)
 
-Use the GetTypeSource tool with these parameters:
+Use the GetXmlType tool with these parameters:
 - softwarePath: {softwarePath}
 - typePath: {typePath}
-- format: {format}
+- maxChars: {maxChars}";
+        }
+
+        [McpServerPrompt(Name = "GetSourceType"), Description("Show one PLC data type as external source text (.udt) without exporting a file")]
+        public static string GetSourceType(string softwarePath, string typePath, string withDependencies = "false", string maxChars = "40000")
+        {
+            return $@"Return one PLC data type as TIA Portal external source text ('.udt', the TYPE ... END_TYPE declaration) directly, in the format the compiler reads back. Needs no TIA Portal V21.
+
+Common parameter values:
+- softwarePath: defines the path in the project structure to the PLC software
+- typePath: root-relative path of the PLC data type, e.g. 'Common/BtnTyp_X'. Use 'ResolveObjectPath' if you only know the name
+- withDependencies: also include every data type this one uses. Default false
+- maxChars: truncate the text at this many characters, on a line boundary (default 40000)
+
+Use the GetSourceType tool with these parameters:
+- softwarePath: {softwarePath}
+- typePath: {typePath}
+- withDependencies: {NormalizeBool(withDependencies)}
+- maxChars: {maxChars}";
+        }
+
+        [McpServerPrompt(Name = "GetDocumentsType"), Description("Show one PLC data type as SIMATIC Source Document text without exporting a file")]
+        public static string GetDocumentsType(string softwarePath, string typePath, string maxChars = "40000")
+        {
+            return $@"Return one PLC data type as readable SIMATIC Source Document text (.s7dcl/.s7res) directly. Requires TIA Portal V21; on older versions use GetSourceType or GetXmlType.
+
+Common parameter values:
+- softwarePath: defines the path in the project structure to the PLC software
+- typePath: root-relative path of the PLC data type, e.g. 'Common/BtnTyp_X'. Use 'ResolveObjectPath' if you only know the name
+- maxChars: truncate the text at this many characters, on a line boundary (default 40000)
+
+Use the GetDocumentsType tool with these parameters:
+- softwarePath: {softwarePath}
+- typePath: {typePath}
 - maxChars: {maxChars}";
         }
 

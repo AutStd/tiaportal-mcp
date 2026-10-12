@@ -10,6 +10,24 @@
   a call omits it; a value in the call still wins. Without the arguments nothing changes. `GetState`
   reports the active presets. Prompts are unchanged.
 
+### Changed
+
+- __Breaking: `GetBlockSource` / `GetTypeSource` replaced by one inline reader per kind__: the two tools took
+  `format: document | xml` and fell back to XML silently, and "Source" in their name meant source documents
+  while every `Export*Source*` tool means compilable external source files. They now follow the names of the
+  export tools, one kind each and no fallback, so the caller always knows what it gets:
+
+  | Kind | Block | Type | Counterpart |
+  |---|---|---|---|
+  | Xml (SimaticML) | `GetXmlBlock` | `GetXmlType` | `ExportXmlBlock` / `ExportXmlType` |
+  | Source (`.scl` / `.db` / `.awl` / `.udt`, new) | `GetSourceBlock` | `GetSourceType` | `ExportSourceBlock` / `ExportSourceType` |
+  | Documents (`.s7dcl` / `.s7res`) | `GetDocumentsBlock` | `GetDocumentsType` | `ExportAsDocuments` / `ExportTypeAsDocuments` |
+
+  Migration: `GetBlockSource` with `format: document` -> `GetDocumentsBlock`, with `format: xml` ->
+  `GetXmlBlock`; same for types. STL and mixed-language blocks, and types before V21, are now rejected by
+  the Documents readers with a hint to the XML reader instead of returning XML. `FindInCode` keeps its own
+  XML fallback for them. The prompts were renamed the same way.
+
 ### Fixed
 
 - __Devices in "Ungrouped devices" were invisible__: `GetDevices` only walked the top-level devices and the

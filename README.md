@@ -68,23 +68,24 @@ To enable write mode, add the argument to your client configuration, for example
 
 ## Tools
 
-Read-only tools (62) are always available.
+Read-only tools (66) are always available.
 
-| Area                          | Tools                                                                                                                                                                                               |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Portal and state              | `Connect`, `Disconnect`, `GetState`, `Doctor`                                                                                                                                                       |
-| Project and session           | `GetProject`, `OpenProject`, `SaveProject`, `SaveAsProject`, `CloseProject`                                                                                                                         |
-| Devices                       | `GetProjectTree`, `GetDevices`, `GetDeviceInfo`, `GetDeviceItemInfo`                                                                                                                                |
-| PLC software                  | `GetSoftwareInfo`, `GetSoftwareTree`, `CompileSoftware`                                                                                                                                             |
-| Blocks                        | `GetBlocks`, `GetBlockInfo`, `GetBlocksWithHierarchy`, `ExportXmlBlock`, `ExportXmlBlocks`, `ImportXmlBlock`                                                                                        |
-| Types                         | `GetTypes`, `GetTypeInfo`, `ExportXmlType`, `ExportXmlTypes`, `ImportXmlType`                                                                                                                       |
-| Tags and constants            | `GetTagTables`, `GetTagTableInfo`, `GetTags`, `GetTagInfo`, `GetConstants`, `ExportXmlTagTable`                                                                                                     |
-| Watch and force tables        | `GetWatchTables`, `GetWatchTableInfo`, `GetForceTables`, `ExportXmlWatchTable`                                                                                                                      |
-| External sources              | `GetExternalSources`, `GetExternalSourceInfo`, `ExportSourceBlock`, `ExportSourceType`                                                                                                              |
-| Cross references              | `GetCrossReferences`                                                                                                                                                                                |
-| Block documents (V20+)        | `ExportAsDocuments`, `ExportBlocksAsDocuments`, `ImportFromDocuments`, `ImportBlocksFromDocuments`                                                                                                  |
-| Type documents (V21+)         | `ExportTypeAsDocuments`, `ExportTypesAsDocuments`                                                                                                                                                   |
-| Understand and read (comfort) | `GetPlcSummary`, `ResolveObjectPath`, `WhereUsed`, `FindInCode`, `GetBlockSource`, `GetTypeSource`, `GetBlockInterface`, `PreviewImport`, `OpenTiaProject`, `ExportPlcAsDocuments`, `ExportSources` |
+| Area                          | Tools                                                                                                                                              |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Portal and state              | `GetPortals`, `Connect`, `Disconnect`, `GetState`, `Doctor`                                                                                        |
+| Project and session           | `GetProject`, `OpenProject`, `SaveProject`, `SaveAsProject`, `CloseProject`                                                                        |
+| Devices                       | `GetProjectTree`, `GetDevices`, `GetDeviceInfo`, `GetDeviceItemInfo`                                                                               |
+| PLC software                  | `GetSoftwareInfo`, `GetSoftwareTree`, `CompileSoftware`                                                                                            |
+| Blocks                        | `GetBlocks`, `GetBlockInfo`, `GetBlocksWithHierarchy`, `ExportXmlBlock`, `ExportXmlBlocks`, `ImportXmlBlock`                                       |
+| Types                         | `GetTypes`, `GetTypeInfo`, `ExportXmlType`, `ExportXmlTypes`, `ImportXmlType`                                                                      |
+| Tags and constants            | `GetTagTables`, `GetTagTableInfo`, `GetTags`, `GetTagInfo`, `GetConstants`, `ExportXmlTagTable`                                                    |
+| Watch and force tables        | `GetWatchTables`, `GetWatchTableInfo`, `GetForceTables`, `ExportXmlWatchTable`                                                                     |
+| External sources              | `GetExternalSources`, `GetExternalSourceInfo`, `ExportSourceBlock`, `ExportSourceBlocks`, `ExportSourceType`, `ExportSourceTypes`, `ExportSources` |
+| Read source inline            | `GetXmlBlock`, `GetXmlType`, `GetSourceBlock`, `GetSourceType`, `GetDocumentsBlock`, `GetDocumentsType`                                            |
+| Cross references              | `GetCrossReferences`                                                                                                                               |
+| Block documents (V20+)        | `ExportAsDocuments`, `ExportBlocksAsDocuments`, `ImportFromDocuments`, `ImportBlocksFromDocuments`                                                 |
+| Type documents (V21+)         | `ExportTypeAsDocuments`, `ExportTypesAsDocuments`                                                                                                  |
+| Understand and read (comfort) | `GetPlcSummary`, `ResolveObjectPath`, `WhereUsed`, `FindInCode`, `GetBlockInterface`, `PreviewImport`, `OpenTiaProject`, `ExportPlcAsDocuments`    |
 
 Write tools (44) require `--allow-write`.
 

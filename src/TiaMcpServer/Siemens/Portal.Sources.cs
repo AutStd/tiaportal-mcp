@@ -23,14 +23,66 @@ namespace TiaMcpServer.Siemens
     {
         #region source text
 
-        /// <summary>
-        /// Source text of one program block. 'document' returns the SIMATIC Source Document
-        /// (readable SCL/LAD/STL text, TIA Portal V20+); 'xml' returns the SimaticML export,
-        /// which is the only option for objects that have no source document.
-        /// </summary>
-        public SourceTextResult GetBlockSource(string softwarePath, string blockPath, string format = "document", int maxChars = 40000)
+        // The six readers mirror the Export tools by kind: Xml (SimaticML), Source (external source
+        // files the compiler reads back) and Documents (SIMATIC Source Documents). Each one exports
+        // with the matching exporter into a scratch directory and returns the text; none falls back
+        // to another kind, so the caller always knows what it got.
+
+        private const string FormatXml = "xml";
+        private const string FormatSource = "source";
+        private const string FormatDocuments = "documents";
+
+        /// <summary>Block as SimaticML XML. Works for every consistent block.</summary>
+        public SourceTextResult GetXmlBlock(string softwarePath, string blockPath, int maxChars = 40000)
         {
-            return Operation.Run(_logger, nameof(GetBlockSource), PortalErrorCode.ExportFailed,
+            return ReadBlock(nameof(GetXmlBlock), softwarePath, blockPath, FormatXml, maxChars,
+                dir => ExportXmlBlock(softwarePath, blockPath, dir) is not null);
+        }
+
+        /// <summary>
+        /// Block as an external source file ('.scl', '.db' or '.awl'). LAD, FBD and GRAPH blocks have
+        /// no source form and are rejected, like <see cref="ExportSourceBlock"/> does.
+        /// </summary>
+        public SourceTextResult GetSourceBlock(string softwarePath, string blockPath, bool withDependencies = false, int maxChars = 40000)
+        {
+            return ReadBlock(nameof(GetSourceBlock), softwarePath, blockPath, FormatSource, maxChars,
+                dir => ExportSourceBlock(softwarePath, blockPath, dir, withDependencies) is not null);
+        }
+
+        /// <summary>
+        /// Block as SIMATIC Source Document (readable SCL/LAD text, TIA Portal V20+). STL and
+        /// mixed-language blocks have none and are rejected.
+        /// </summary>
+        public SourceTextResult GetDocumentsBlock(string softwarePath, string blockPath, int maxChars = 40000)
+        {
+            return ReadBlock(nameof(GetDocumentsBlock), softwarePath, blockPath, FormatDocuments, maxChars,
+                dir => ExportAsDocuments(softwarePath, blockPath, dir));
+        }
+
+        /// <summary>PLC data type as SimaticML XML.</summary>
+        public SourceTextResult GetXmlType(string softwarePath, string typePath, int maxChars = 40000)
+        {
+            return ReadType(nameof(GetXmlType), softwarePath, typePath, FormatXml, maxChars,
+                dir => ExportXmlType(softwarePath, typePath, dir) is not null);
+        }
+
+        /// <summary>PLC data type as a '.udt' external source file. Needs no TIA Portal V21.</summary>
+        public SourceTextResult GetSourceType(string softwarePath, string typePath, bool withDependencies = false, int maxChars = 40000)
+        {
+            return ReadType(nameof(GetSourceType), softwarePath, typePath, FormatSource, maxChars,
+                dir => ExportSourceType(softwarePath, typePath, dir, withDependencies) is not null);
+        }
+
+        /// <summary>PLC data type as SIMATIC Source Document. Requires TIA Portal V21.</summary>
+        public SourceTextResult GetDocumentsType(string softwarePath, string typePath, int maxChars = 40000)
+        {
+            return ReadType(nameof(GetDocumentsType), softwarePath, typePath, FormatDocuments, maxChars,
+                dir => ExportTypeAsDocuments(softwarePath, typePath, dir).Files.Count > 0);
+        }
+
+        private SourceTextResult ReadBlock(string operation, string softwarePath, string blockPath, string format, int maxChars, Func<string, bool> export)
+        {
+            return Operation.Run(_logger, operation, PortalErrorCode.ExportFailed,
                 () =>
                 {
                     var block = GetBlock(softwarePath, blockPath)
@@ -44,21 +96,14 @@ namespace TiaMcpServer.Siemens
                             "or use 'GetBlockInterface', which works without an export.");
                     }
 
-                    return ReadSource(
-                        format,
-                        blockPath,
-                        block.Name,
-                        maxChars,
-                        dir => ExportAsDocuments(softwarePath, blockPath, dir),
-                        dir => ExportXmlBlock(softwarePath, blockPath, dir) is not null);
+                    return ReadSource(format, blockPath, block.Name, maxChars, export);
                 },
-                ("softwarePath", softwarePath), ("blockPath", blockPath), ("format", format));
+                ("softwarePath", softwarePath), ("blockPath", blockPath));
         }
 
-        /// <summary>Source text of one PLC data type. Documents require TIA Portal V21.</summary>
-        public SourceTextResult GetTypeSource(string softwarePath, string typePath, string format = "document", int maxChars = 40000)
+        private SourceTextResult ReadType(string operation, string softwarePath, string typePath, string format, int maxChars, Func<string, bool> export)
         {
-            return Operation.Run(_logger, nameof(GetTypeSource), PortalErrorCode.ExportFailed,
+            return Operation.Run(_logger, operation, PortalErrorCode.ExportFailed,
                 () =>
                 {
                     var type = GetType(softwarePath, typePath)
@@ -71,15 +116,9 @@ namespace TiaMcpServer.Siemens
                             $"PLC data type '{type.Name}' is inconsistent; compile the software before reading its source.");
                     }
 
-                    return ReadSource(
-                        format,
-                        typePath,
-                        type.Name,
-                        maxChars,
-                        dir => ExportTypeAsDocuments(softwarePath, typePath, dir).Files.Count > 0,
-                        dir => ExportXmlType(softwarePath, typePath, dir) is not null);
+                    return ReadSource(format, typePath, type.Name, maxChars, export);
                 },
-                ("softwarePath", softwarePath), ("typePath", typePath), ("format", format));
+                ("softwarePath", softwarePath), ("typePath", typePath));
         }
 
         #endregion
@@ -87,13 +126,13 @@ namespace TiaMcpServer.Siemens
         // From the former Portal.Source.cs:
         // Reading what an object actually contains, rather than only its metadata.
         //
-        // Callers: the GetBlockSource / GetTypeSource tools and ExportPlcAsDocuments in McpServer.Sources.cs,
+        // Callers: the GetXml*/GetSource*/GetDocuments* tools and ExportPlcAsDocuments in McpServer.Sources.cs,
         // and the GetBlockInterface tool in McpServer.Blocks.cs.
         // Affected API: none existing - every member here is new. GetBlockInterface itself lives in
         // Portal.Blocks.cs; the source readers, the shared reader, the scratch directory and the whole-PLC export are here.
         //
         // File I/O: Openness exposes no in-memory object for a block body - the only way to obtain
-        // the code is to export it - so the source readers export into a scratch directory under
+        // the code is to export it - so the readers export into a scratch directory under
         // the system temp path and remove it again before returning. Nothing is written to a
         // caller-visible location, and the project is never modified.
         //
@@ -145,7 +184,7 @@ namespace TiaMcpServer.Siemens
         #region source text
 
         /// <summary>
-        /// Shared body of the two readers: export into a scratch directory with the requested
+        /// Shared body of the six readers: export into a scratch directory with the given
         /// exporter, concatenate what landed there, and truncate on a line boundary.
         /// </summary>
         private SourceTextResult ReadSource(
@@ -153,17 +192,8 @@ namespace TiaMcpServer.Siemens
             string objectPath,
             string name,
             int maxChars,
-            Func<string, bool> exportDocuments,
-            Func<string, bool> exportXml)
+            Func<string, bool> export)
         {
-            var wantsDocument = format.Equals("document", StringComparison.OrdinalIgnoreCase);
-
-            if (!wantsDocument && !format.Equals("xml", StringComparison.OrdinalIgnoreCase))
-            {
-                throw new PortalException(PortalErrorCode.InvalidParams,
-                    $"Unknown format '{format}'. Use 'document' for readable source text or 'xml' for SimaticML.");
-            }
-
             if (maxChars <= 0)
             {
                 throw new PortalException(PortalErrorCode.InvalidParams, "'maxChars' must be greater than zero.");
@@ -171,28 +201,18 @@ namespace TiaMcpServer.Siemens
 
             using (var scope = new SourceScope(_logger))
             {
-                var used = wantsDocument ? "document" : "xml";
-
-                if (wantsDocument)
+                try
                 {
-                    try
-                    {
-                        exportDocuments(scope.Directory);
-                    }
-                    catch (PortalException pex) when (IsUnsupportedForDocuments(pex))
-                    {
-                        // TIA Portal refuses a source document for whole categories of object -
-                        // STL blocks and mixed-language blocks among them. XML always exists, so
-                        // fall back and say so in Format rather than returning nothing.
-                        _logger?.LogWarning("No source document for '{Name}', falling back to XML: {Reason}", name, pex.Message);
-
-                        exportXml(scope.Directory);
-                        used = "xml";
-                    }
+                    export(scope.Directory);
                 }
-                else
+                catch (PortalException pex) when (format == FormatDocuments && IsUnsupportedForDocuments(pex))
                 {
-                    exportXml(scope.Directory);
+                    // TIA Portal refuses a source document for whole categories of object -
+                    // STL blocks and mixed-language blocks among them. Say so instead of
+                    // silently returning another kind; the XML reader is the alternative.
+                    throw new PortalException(PortalErrorCode.NotSupported,
+                        $"'{objectPath}' has no source document ({pex.Message}). " +
+                        "Use 'GetXmlBlock' / 'GetXmlType' for SimaticML instead.", null, pex);
                 }
 
                 var files = System.IO.Directory
@@ -227,7 +247,7 @@ namespace TiaMcpServer.Siemens
                 {
                     Name = name,
                     Path = objectPath,
-                    Format = used,
+                    Format = format,
                     Text = text,
                     TotalChars = full,
                     Truncated = truncated,

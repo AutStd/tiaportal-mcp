@@ -81,7 +81,7 @@ namespace TiaMcpServer.Siemens
                     var result = new CodeSearchResult { Pattern = pattern };
 
                     // Blocks and types are read through the same readers the source tools use, so
-                    // a hit always corresponds to text the caller can fetch with GetBlockSource.
+                    // a hit always corresponds to text the caller can fetch with GetDocumentsBlock.
                     var targets = new List<(string Path, bool IsBlock)>();
 
                     targets.AddRange(GetBlocks(softwarePath, nameFilter)
@@ -108,8 +108,8 @@ namespace TiaMcpServer.Siemens
                         try
                         {
                             source = target.IsBlock
-                                ? GetBlockSource(softwarePath, target.Path, "document", int.MaxValue)
-                                : GetTypeSource(softwarePath, target.Path, "document", int.MaxValue);
+                                ? ReadBlockForSearch(softwarePath, target.Path)
+                                : ReadTypeForSearch(softwarePath, target.Path);
                         }
                         catch (Exception ex)
                         {
@@ -131,6 +131,39 @@ namespace TiaMcpServer.Siemens
                     return result;
                 },
                 ("softwarePath", softwarePath), ("pattern", pattern), ("nameFilter", nameFilter));
+        }
+
+        /// <summary>
+        /// Documents are the readable form, but STL and mixed-language blocks have none; a search
+        /// should still cover them, so those fall back to XML here (and only here).
+        /// </summary>
+        private SourceTextResult ReadBlockForSearch(string softwarePath, string blockPath)
+        {
+            try
+            {
+                return GetDocumentsBlock(softwarePath, blockPath, int.MaxValue);
+            }
+            catch (PortalException pex) when (pex.Code == PortalErrorCode.NotSupported)
+            {
+                _logger?.LogDebug(pex, "No source document for '{Path}', searching its XML instead", blockPath);
+
+                return GetXmlBlock(softwarePath, blockPath, int.MaxValue);
+            }
+        }
+
+        /// <summary>Same fallback for PLC data types: documents need TIA Portal V21, XML works everywhere.</summary>
+        private SourceTextResult ReadTypeForSearch(string softwarePath, string typePath)
+        {
+            try
+            {
+                return GetDocumentsType(softwarePath, typePath, int.MaxValue);
+            }
+            catch (PortalException pex) when (pex.Code == PortalErrorCode.NotSupported)
+            {
+                _logger?.LogDebug(pex, "No source document for '{Path}', searching its XML instead", typePath);
+
+                return GetXmlType(softwarePath, typePath, int.MaxValue);
+            }
         }
 
         private static void AddMatches(CodeSearchResult result, string objectPath, SourceTextResult source, Regex regex, int maxResults)
@@ -167,7 +200,7 @@ namespace TiaMcpServer.Siemens
     /// <summary>One line of source text that matched the search.</summary>
     public class CodeMatch
     {
-        /// <summary>Root-relative path, ready to pass to GetBlockSource or GetTypeSource.</summary>
+        /// <summary>Root-relative path, ready to pass to the GetXml*, GetSource* and GetDocuments* tools.</summary>
         public string ObjectPath { get; set; } = string.Empty;
 
         /// <summary>'document' or 'xml' - which representation was searched.</summary>

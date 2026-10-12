@@ -474,7 +474,7 @@ namespace TiaMcpServer.ModelContextProtocol
         #region source
 
         [McpServerTool(Name = "GetBlockInterface", Title = "Get block interface", ReadOnly = true, OpenWorld = false, UseStructuredContent = true),
-         Description("List the members of a data block with their data type and every attribute TIA Portal reports. Needs no export and works on inconsistent blocks. Data blocks only: Openness offers no interface accessor for FB, FC or OB, whose declarations come from 'GetBlockSource' instead")]
+         Description("List the members of a data block with their data type and every attribute TIA Portal reports. Needs no export and works on inconsistent blocks. Data blocks only: Openness offers no interface accessor for FB, FC or OB, whose declarations come from 'GetSourceBlock' or 'GetDocumentsBlock' instead")]
         public static ResponseBlockInterface GetBlockInterface(
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
             [Description("blockPath: root-relative path of the data block, e.g. '1_Tests/DB_Block_1'")] string blockPath)

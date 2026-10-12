@@ -562,7 +562,7 @@ namespace TiaMcpServer.ModelContextProtocol
     /// <summary>One line of source text that matched a code search.</summary>
     public class ResponseCodeMatch
     {
-        /// <summary>Root-relative path, ready to pass to GetBlockSource or GetTypeSource.</summary>
+        /// <summary>Root-relative path, ready to pass to the GetXml*, GetSource* and GetDocuments* tools.</summary>
         public string? ObjectPath { get; set; }
 
         /// <summary>'document' or 'xml' - which representation was searched.</summary>

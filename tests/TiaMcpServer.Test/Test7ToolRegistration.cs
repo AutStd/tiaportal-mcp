@@ -369,6 +369,48 @@ namespace TiaMcpServer.Test
                 "A quote inside a value is not at the edge of an argument");
         }
 
+        [TestMethod]
+        [DataRow("GetXmlBlock", "ExportXmlBlock", false)]
+        [DataRow("GetXmlType", "ExportXmlType", false)]
+        [DataRow("GetSourceBlock", "ExportSourceBlock", true)]
+        [DataRow("GetSourceType", "ExportSourceType", true)]
+        [DataRow("GetDocumentsBlock", "ExportAsDocuments", false)]
+        [DataRow("GetDocumentsType", "ExportTypeAsDocuments", false)]
+        public void Test_716_InlineReaders_AreReadOnlyAndTakeNoFormat(string name, string counterpart, bool hasWithDependencies)
+        {
+            // Arrange
+            var tools = ToolMethods();
+
+            // Act
+            var reader = tools.SingleOrDefault(t => t.Name == name);
+            var parameters = reader.Method?.GetParameters().Select(p => p.Name).ToList() ?? new List<string?>();
+            var attribute = reader.Method?.GetCustomAttribute<global::ModelContextProtocol.Server.McpServerToolAttribute>();
+
+            // Assert
+            Assert.IsNotNull(reader.Method, $"'{name}' is not registered");
+            Assert.IsTrue(attribute!.ReadOnly, $"'{name}' reads only and must be marked read-only");
+            Assert.IsNull(reader.Method!.GetCustomAttribute<WriteToolAttribute>(), $"'{name}' must not need --allow-write");
+            Assert.IsFalse(parameters.Contains("format"), $"'{name}' is one kind and must not take 'format'");
+            Assert.IsTrue(parameters.Contains("maxChars"), $"'{name}' must be able to truncate");
+            Assert.AreEqual(hasWithDependencies, parameters.Contains("withDependencies"),
+                $"'{name}': withDependencies exists only on the source readers");
+            Assert.IsTrue(tools.Any(t => t.Name == counterpart), $"The counterpart '{counterpart}' of '{name}' must exist");
+        }
+
+        [TestMethod]
+        [DataRow("GetBlockSource")]
+        [DataRow("GetTypeSource")]
+        public void Test_717_InlineReaders_OldFormatSwitchedToolsAreGone(string oldName)
+        {
+            // Arrange / Act
+            var tools = ToolMethods();
+            var prompts = PromptMethods();
+
+            // Assert
+            Assert.IsFalse(tools.Any(t => t.Name == oldName), $"Tool '{oldName}' was replaced by one reader per kind");
+            Assert.IsFalse(prompts.Any(p => p.Name == oldName), $"Prompt '{oldName}' was replaced by one prompt per kind");
+        }
+
         private static List<(string Name, MethodInfo Method, string? Title)> ToolMethods()
         {
             var result = new List<(string Name, MethodInfo Method, string? Title)>();

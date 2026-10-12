@@ -25,16 +25,42 @@ namespace TiaMcpServer.ModelContextProtocol
 
         #region source
 
-        [McpServerTool(Name = "GetBlockSource", Title = "Get block source", ReadOnly = true, OpenWorld = false, UseStructuredContent = true),
-         Description("Return the source text of one program block directly, instead of exporting a file and reading it back. 'document' gives readable SCL/LAD/STL (SIMATIC Source Document, V20+); objects TIA Portal cannot represent that way - STL and mixed-language blocks - fall back to XML automatically, and the response says which format was produced")]
-        public static ResponseSourceText GetBlockSource(
+        [McpServerTool(Name = "GetXmlBlock", Title = "Get block as XML", ReadOnly = true, OpenWorld = false, UseStructuredContent = true),
+         Description("Return one program block as SimaticML XML text directly, instead of exporting a file and reading it back. Works for every consistent block, whatever its language. The inline counterpart to 'ExportXmlBlock'")]
+        public static ResponseSourceText GetXmlBlock(
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
             [Description("blockPath: root-relative path of the block, e.g. '0_OBs/Main'. Use 'ResolveObjectPath' if you only know the name")] string blockPath,
-            [Description("format: 'document' (default) for readable source text, or 'xml' for the SimaticML export")] string format = "document",
             [Description("maxChars: truncate the text at this many characters, on a line boundary (default 40000)")] int maxChars = 40000)
         {
             return Sourced(
-                () => Portal.GetBlockSource(softwarePath, blockPath, format, maxChars),
+                () => Portal.GetXmlBlock(softwarePath, blockPath, maxChars),
+                blockPath,
+                "block");
+        }
+
+        [McpServerTool(Name = "GetSourceBlock", Title = "Get block as source", ReadOnly = true, OpenWorld = false, UseStructuredContent = true),
+         Description("Return one program block as TIA Portal external source text ('.scl' for SCL, '.db' for data blocks, '.awl' for STL) directly, in the format the compiler reads back. LAD, FBD and GRAPH blocks have no source form and are rejected with a reason - use 'GetXmlBlock' or 'GetDocumentsBlock' for those. The inline counterpart to 'ExportSourceBlock'")]
+        public static ResponseSourceText GetSourceBlock(
+            [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
+            [Description("blockPath: root-relative path of the block, e.g. '0_OBs/Main'. Use 'ResolveObjectPath' if you only know the name")] string blockPath,
+            [Description("withDependencies: also include every object the block uses (called blocks, instance DBs, UDTs), so the text compiles on its own. Default false")] bool withDependencies = false,
+            [Description("maxChars: truncate the text at this many characters, on a line boundary (default 40000)")] int maxChars = 40000)
+        {
+            return Sourced(
+                () => Portal.GetSourceBlock(softwarePath, blockPath, withDependencies, maxChars),
+                blockPath,
+                "block");
+        }
+
+        [McpServerTool(Name = "GetDocumentsBlock", Title = "Get block as documents", ReadOnly = true, OpenWorld = false, UseStructuredContent = true),
+         Description("Return one program block as readable SIMATIC Source Document text (.s7dcl/.s7res, TIA Portal V20+) directly. STL and mixed-language blocks have no source document and are rejected - use 'GetXmlBlock' or 'GetSourceBlock' for those. The inline counterpart to 'ExportAsDocuments'")]
+        public static ResponseSourceText GetDocumentsBlock(
+            [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
+            [Description("blockPath: root-relative path of the block, e.g. '0_OBs/Main'. Use 'ResolveObjectPath' if you only know the name")] string blockPath,
+            [Description("maxChars: truncate the text at this many characters, on a line boundary (default 40000)")] int maxChars = 40000)
+        {
+            return Sourced(
+                () => Portal.GetDocumentsBlock(softwarePath, blockPath, maxChars),
                 blockPath,
                 "block");
         }
@@ -78,16 +104,42 @@ namespace TiaMcpServer.ModelContextProtocol
             }
         }
 
-        [McpServerTool(Name = "GetTypeSource", Title = "Get type source", ReadOnly = true, OpenWorld = false, UseStructuredContent = true),
-         Description("Return the source text of one PLC data type directly, instead of exporting a file and reading it back. 'document' gives the readable TYPE ... END_TYPE declaration (SIMATIC Source Document, requires TIA Portal V21); 'xml' gives the SimaticML export")]
-        public static ResponseSourceText GetTypeSource(
+        [McpServerTool(Name = "GetXmlType", Title = "Get type as XML", ReadOnly = true, OpenWorld = false, UseStructuredContent = true),
+         Description("Return one PLC data type as SimaticML XML text directly, instead of exporting a file and reading it back. The inline counterpart to 'ExportXmlType'")]
+        public static ResponseSourceText GetXmlType(
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
             [Description("typePath: root-relative path of the PLC data type, e.g. 'Common/BtnTyp_X'. Use 'ResolveObjectPath' if you only know the name")] string typePath,
-            [Description("format: 'document' (default) for readable source text, or 'xml' for the SimaticML export")] string format = "document",
             [Description("maxChars: truncate the text at this many characters, on a line boundary (default 40000)")] int maxChars = 40000)
         {
             return Sourced(
-                () => Portal.GetTypeSource(softwarePath, typePath, format, maxChars),
+                () => Portal.GetXmlType(softwarePath, typePath, maxChars),
+                typePath,
+                "PLC data type");
+        }
+
+        [McpServerTool(Name = "GetSourceType", Title = "Get type as source", ReadOnly = true, OpenWorld = false, UseStructuredContent = true),
+         Description("Return one PLC data type as TIA Portal external source text ('.udt', the TYPE ... END_TYPE declaration) directly, in the format the compiler reads back. Needs no TIA Portal V21. The inline counterpart to 'ExportSourceType'")]
+        public static ResponseSourceText GetSourceType(
+            [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
+            [Description("typePath: root-relative path of the PLC data type, e.g. 'Common/BtnTyp_X'. Use 'ResolveObjectPath' if you only know the name")] string typePath,
+            [Description("withDependencies: also include every data type this one uses. Default false")] bool withDependencies = false,
+            [Description("maxChars: truncate the text at this many characters, on a line boundary (default 40000)")] int maxChars = 40000)
+        {
+            return Sourced(
+                () => Portal.GetSourceType(softwarePath, typePath, withDependencies, maxChars),
+                typePath,
+                "PLC data type");
+        }
+
+        [McpServerTool(Name = "GetDocumentsType", Title = "Get type as documents", ReadOnly = true, OpenWorld = false, UseStructuredContent = true),
+         Description("Return one PLC data type as readable SIMATIC Source Document text (.s7dcl/.s7res) directly. Requires TIA Portal V21; on older versions use 'GetSourceType' or 'GetXmlType'. The inline counterpart to 'ExportTypeAsDocuments'")]
+        public static ResponseSourceText GetDocumentsType(
+            [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
+            [Description("typePath: root-relative path of the PLC data type, e.g. 'Common/BtnTyp_X'. Use 'ResolveObjectPath' if you only know the name")] string typePath,
+            [Description("maxChars: truncate the text at this many characters, on a line boundary (default 40000)")] int maxChars = 40000)
+        {
+            return Sourced(
+                () => Portal.GetDocumentsType(softwarePath, typePath, maxChars),
                 typePath,
                 "PLC data type");
         }
@@ -164,7 +216,7 @@ namespace TiaMcpServer.ModelContextProtocol
         }
 
         [McpServerTool(Name = "ExportSourceType", Title = "Export type as source", Destructive = true, Idempotent = true, OpenWorld = false, UseStructuredContent = true),
-         Description("Write one PLC data type as a '*.udt' external source file, in the format the compiler reads back. Unlike 'GetTypeSource' this needs no TIA Portal V21 and produces a file that can be imported again")]
+         Description("Write one PLC data type as a '*.udt' external source file, in the format the compiler reads back. Unlike 'ExportTypeAsDocuments' this needs no TIA Portal V21 and produces a file that can be imported again")]
         public static ResponseGeneratedSource ExportSourceType(
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
             [Description("typePath: root-relative path of the PLC data type, e.g. 'Common/BtnTyp_X'. Use 'ResolveObjectPath' if you only know the name")] string typePath,

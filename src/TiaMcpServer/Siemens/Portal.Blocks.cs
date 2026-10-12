@@ -795,7 +795,7 @@ namespace TiaMcpServer.Siemens
         ///
         /// Data blocks only: V21 Openness puts 'Interface' on DataBlock and offers no equivalent
         /// accessor on CodeBlock, so the VAR_INPUT/VAR_OUTPUT declarations of an FB, FC or OB
-        /// have to be read from the declaration part of GetBlockSource instead.
+        /// have to be read from the declaration part of GetSourceBlock or GetDocumentsBlock instead.
         /// </summary>
         public List<InterfaceMember> GetBlockInterface(string softwarePath, string blockPath)
         {
@@ -810,7 +810,7 @@ namespace TiaMcpServer.Siemens
                     {
                         throw new PortalException(PortalErrorCode.NotSupported,
                             $"'{block.Name}' is a {block.GetType().Name}, and Openness exposes an interface only for data blocks. " +
-                            "Use 'GetBlockSource' and read its declaration part instead.");
+                            "Use 'GetSourceBlock' or 'GetDocumentsBlock' and read its declaration part instead.");
                     }
 
                     var members = dataBlock.Interface?.Members
