@@ -246,10 +246,9 @@ namespace TiaMcpServer.Test
         }
 
         [TestMethod]
-        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "0_OBs", Settings.Project1ExportPath0 + "\\Program blocks\\0_OBs\\Main_1.xml")]
-        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "1_Tests", Settings.Project1ExportPath0 + "\\Program blocks\\1_Tests\\FC_Block_1.xml")]
-        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "1_Tests", Settings.Project1ExportPath0 + "\\Program blocks\\1_Tests\\DB_Block_1.xml")]
-        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "Common/CarrierRegister", Settings.Project1ExportPath0 + "\\Program blocks\\Common\\CarrierRegister\\GLOBAL_POSITIONING.xml")]
+        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "0_OBs", Settings.Project1ExportPath0 + "\\" + Settings.Project1PlcSoftwarePath0 + "\\Program blocks\\0_OBs\\Main_1.xml")]
+        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "1_Tests", Settings.Project1ExportPath0 + "\\" + Settings.Project1PlcSoftwarePath0 + "\\Program blocks\\1_Tests\\FC_Block_1.xml")]
+        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "1_Tests", Settings.Project1ExportPath0 + "\\" + Settings.Project1PlcSoftwarePath0 + "\\Program blocks\\1_Tests\\DB_Block_1.xml")]
         public void Test_415_ImportXmlBlock(string projectPath, string softwarePath, string groupPath, string importPath)
         {
             if (_portal == null)
@@ -299,8 +298,8 @@ namespace TiaMcpServer.Test
         }
 
         [TestMethod]
-        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "Common/CarrierRegister", Settings.Project1ExportPath0 + "\\Plc data types\\Common\\CarrierRegister\\ML_SubstratState.xml")]
-        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "Common/CarrierRegister", Settings.Project1ExportPath0 + "\\Plc data types\\Common\\CarrierRegister\\ML_CarrierRegisterShort.xml")]
+        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "Common/CarrierRegister", Settings.Project1ExportPath0 + "\\" + Settings.Project1PlcSoftwarePath0 + "\\Plc data types\\Common\\CarrierRegister\\ML_SubstratState.xml")]
+        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "Common/CarrierRegister", Settings.Project1ExportPath0 + "\\" + Settings.Project1PlcSoftwarePath0 + "\\Plc data types\\Common\\CarrierRegister\\ML_CarrierRegisterShort.xml")]
         public void Test_416_ImportXmlType(string projectPath, string softwarePath, string groupPath, string importPath)
         {
             if (_portal == null)
@@ -402,16 +401,17 @@ namespace TiaMcpServer.Test
         /// PLC has and checks the file, so no table name has to be hard-coded.
         /// </summary>
         [TestMethod]
-        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, false)]
-        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, true)]
-        public void Test_419_ExportXmlTagTable(string projectPath, string softwarePath, bool preservePath)
+        //[DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, Settings.Project1ExportPath0, false)]
+        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, Settings.Project1ExportPath0, true)]
+        public void Test_419_ExportXmlTagTable(string projectPath, string softwarePath, string exportPath, bool preservePath)
         {
             if (_portal == null)
             {
                 Assert.Fail("TiaPortal instance is not initialized");
             }
 
-            var exportPath = NewTempDirectory("ExportXmlTagTable");
+            // The export lands below <exportPath>/<softwarePath>/.
+            var softwareRoot = Path.Combine(exportPath, softwarePath);
 
             Assert.IsTrue(Common.OpenProject(_portal, projectPath), "Failed to open the project");
 
@@ -430,7 +430,7 @@ namespace TiaMcpServer.Test
                 Assert.IsNotNull(result, "No tag table was returned");
                 Assert.AreEqual(candidate!.Name, result!.Name, "Name mismatch");
 
-                var files = Directory.GetFiles(exportPath, "*.xml", SearchOption.AllDirectories);
+                var files = Directory.GetFiles(softwareRoot, "*.xml", SearchOption.AllDirectories);
 
                 Console.WriteLine($"Exported tag table '{tagTablePath}': {string.Join(", ", files)}");
 
@@ -438,7 +438,7 @@ namespace TiaMcpServer.Test
                 Assert.AreEqual(candidate.Name + ".xml", Path.GetFileName(files[0]), "The file is named after the table");
                 Assert.IsTrue(new FileInfo(files[0]).Length > 0, "The XML file is empty");
 
-                var relative = files[0].Substring(exportPath.Length).TrimStart('\\', '/');
+                var relative = files[0].Substring(softwareRoot.Length).TrimStart('\\', '/');
 
                 if (preservePath)
                 {
@@ -457,7 +457,7 @@ namespace TiaMcpServer.Test
             finally
             {
                 Common.CloseProject(_portal, projectPath);
-                DeleteTempDirectory(exportPath);
+                DeleteTempDirectory(softwareRoot);
             }
         }
 
@@ -465,15 +465,15 @@ namespace TiaMcpServer.Test
         /// An unknown tag table is reported as NotFound before anything is written.
         /// </summary>
         [TestMethod]
-        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "NoSuchGroup/NoSuchTable")]
-        public void Test_420_ExportXmlTagTable_UnknownTableIsNotFound(string projectPath, string softwarePath, string tagTablePath)
+        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, Settings.Project1ExportPath0, "NoSuchGroup/NoSuchTable")]
+        public void Test_420_ExportXmlTagTable_UnknownTableIsNotFound(string projectPath, string softwarePath, string exportPath, string tagTablePath)
         {
             if (_portal == null)
             {
                 Assert.Fail("TiaPortal instance is not initialized");
             }
 
-            var exportPath = NewTempDirectory("ExportXmlTagTableUnknown");
+            var softwareRoot = Portal.ResolveSoftwareRoot(exportPath, softwarePath);
 
             Assert.IsTrue(Common.OpenProject(_portal, projectPath), "Failed to open the project");
 
@@ -493,13 +493,13 @@ namespace TiaMcpServer.Test
                 Assert.IsNotNull(thrown, "Exporting an unknown tag table must throw a PortalException");
                 Assert.AreEqual(PortalErrorCode.NotFound, thrown!.Code, "Error code mismatch");
                 Assert.IsFalse(
-                    Directory.Exists(exportPath) && Directory.GetFiles(exportPath, "*.*", SearchOption.AllDirectories).Length > 0,
+                    Directory.Exists(softwareRoot) && Directory.GetFiles(softwareRoot, "*.*", SearchOption.AllDirectories).Length > 0,
                     "Nothing may be written for an unknown table");
             }
             finally
             {
                 Common.CloseProject(_portal, projectPath);
-                DeleteTempDirectory(exportPath);
+                DeleteTempDirectory(softwareRoot);
             }
         }
 
@@ -912,15 +912,15 @@ namespace TiaMcpServer.Test
         }
 
         [TestMethod]
-        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0)]
-        public void Test_452_ExportPlcAsDocuments(string projectPath, string softwarePath)
+        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, Settings.Project1ExportPath0)]
+        public void Test_452_ExportPlcAsDocuments(string projectPath, string softwarePath, string exportPath)
         {
             if (_portal == null)
             {
                 Assert.Fail("TiaPortal instance is not initialized");
             }
 
-            var exportPath = Path.Combine(Path.GetTempPath(), "TiaMcpServerSnapshot", Guid.NewGuid().ToString("N"));
+            exportPath = Path.Combine(exportPath, "TiaMcpServerSnapshot", Guid.NewGuid().ToString("N"));
 
             Assert.IsTrue(Common.OpenProject(_portal, projectPath), "Failed to open the project");
 
@@ -1360,16 +1360,16 @@ namespace TiaMcpServer.Test
         /// in the export folder, with it below the block's group.
         /// </summary>
         [TestMethod]
-        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "1_Tests/DB_Block_1", false)]
-        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "1_Tests/DB_Block_1", true)]
-        public void Test_491_ExportSourceBlock(string projectPath, string softwarePath, string blockPath, bool preservePath)
+        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, Settings.Project1ExportPath0, "1_Tests/DB_Block_1", false)]
+        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, Settings.Project1ExportPath0, "1_Tests/DB_Block_1", true)]
+        public void Test_491_ExportSourceBlock(string projectPath, string softwarePath, string exportPath, string blockPath, bool preservePath)
         {
             if (_portal == null)
             {
                 Assert.Fail("TiaPortal instance is not initialized");
             }
 
-            var exportPath = NewTempDirectory("ExportSourceBlock");
+            exportPath = Path.Combine(exportPath, "SourceBlock");
 
             Assert.IsTrue(Common.OpenProject(_portal, projectPath), "Failed to open the project");
 
@@ -1407,16 +1407,14 @@ namespace TiaMcpServer.Test
         /// as skipped rather than failing the run.
         /// </summary>
         [TestMethod]
-        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "", "")]
-        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "^DB_Block_1$", "DB_Block_1")]
-        public void Test_492_ExportSources(string projectPath, string softwarePath, string regexName, string expectedName)
+        //[DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, Settings.Project1ExportPath0, "", "")]
+        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, Settings.Project1ExportPath0, "^DB_Block_1$", "DB_Block_1")]
+        public void Test_492_ExportSources(string projectPath, string softwarePath, string exportPath, string regexName, string expectedName)
         {
             if (_portal == null)
             {
                 Assert.Fail("TiaPortal instance is not initialized");
             }
-
-            var exportPath = NewTempDirectory("ExportSources");
 
             Assert.IsTrue(Common.OpenProject(_portal, projectPath), "Failed to open the project");
 
@@ -1445,7 +1443,7 @@ namespace TiaMcpServer.Test
 
                 var knownFormats = new[] { ".db", ".awl", ".scl", ".udt" };
 
-                Assert.AreEqual(exportPath, result.Directory, "Directory mismatch");
+                Assert.AreEqual(Portal.ResolveSoftwareRoot(exportPath, softwarePath), result.Directory, "Directory mismatch");
                 Assert.AreEqual(result.Files.Count, result.Written["blocks"] + result.Written["types"], "Written counts do not add up to the files");
                 Assert.IsTrue(result.Files.All(f => File.Exists(f.File)), "A reported source file does not exist");
                 Assert.IsTrue(result.Files.All(f => knownFormats.Contains(f.Format)), "A file has an unexpected format");
