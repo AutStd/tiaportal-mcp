@@ -12,6 +12,14 @@
 
 ### Fixed
 
+- __Devices in "Ungrouped devices" were invisible__: `GetDevices` only walked the top-level devices and the
+  user groups, never the project's `UngroupedDevicesGroup` (a system group), so GSD based IO devices,
+  SCALANCE switches, ET200SP/eco stations and the like were missing from every device list. The group is
+  now included, and `regexName` is applied to all devices, also the top-level ones.
+- __Device names containing `/`__: `GetDeviceInfo` and the other device lookups split the path on `/`
+  immediately, so a station such as `S7-1500/ET200MP station_1`, copied from `GetProjectTree`, was reported
+  as "Device not found". The whole input is now tried as a device name first (top level and ungrouped), and
+  inside a group the remaining segments are tried as one name.
 - __`GetTypeSource` with `format: xml`__: the type XML export was called with `typePath` and the scratch
   directory swapped, so the XML fallback for types without a source document could not work.
 - __`ExportSourceBlocks` / `ExportSourceTypes` filter by name__: both tools now take an optional `regexName`

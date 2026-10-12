@@ -146,5 +146,26 @@ namespace TiaMcpServer.Test
 
             Assert.IsTrue(success, "No Devices found");
         }
+
+        [TestMethod]
+        [DataRow(Settings.Project1ProjectPath, "^PC-System_0$", "PC-System_0")]
+        public void Test_304_GetDevices_RegexFiltersTopLevelDevices(string projectPath, string regexName, string expectedName)
+        {
+            if (_portal == null)
+            {
+                Assert.Fail("TiaPortal instance is not initialized");
+            }
+
+            bool success = Common.OpenProject(_portal, projectPath);
+
+            var list = _portal.GetDevices(regexName);
+            Console.WriteLine($"Devices: {list.Count} found for '{regexName}'");
+
+            success &= list.Count == 1 && list[0].Name == expectedName;
+
+            success &= Common.CloseProject(_portal, projectPath);
+
+            Assert.IsTrue(success, $"Expected exactly '{expectedName}' for regex '{regexName}'");
+        }
     }
 }

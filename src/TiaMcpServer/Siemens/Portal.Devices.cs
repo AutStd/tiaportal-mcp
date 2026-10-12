@@ -29,27 +29,9 @@ namespace TiaMcpServer.Siemens
                 return [];
             }
 
-            var list = new List<Device>();
-
-            if (_project?.Devices != null)
-            {
-                foreach (Device device in _project.Devices)
-                {
-                    list.Add(device);
-                }
-
-                foreach (var group in _project.DeviceGroups)
-                {
-                    GetDevicesRecursive(group, list, regexName);
-                }
-
-                //foreach (var group in _project.UngroupedDevicesGroup)
-                //{
-                //    GetDevicesRecursive(_project.UngroupedDevicesGroup, list, regexName);
-                //}
-            }
-
-            return list;
+            return EnumerateAllDevices()
+                .Where(device => MatchesRegex(device, regexName))
+                .ToList();
         }
 
         public Device? GetDevice(string devicePath)
@@ -88,6 +70,15 @@ namespace TiaMcpServer.Siemens
             if (_project?.Devices == null || string.IsNullOrWhiteSpace(devicePath))
                 return null;
 
+            // A device name can itself contain '/' (e.g. 'S7-1500/ET200MP station_1'), so try the
+            // whole input as a name before splitting it into group/device segments.
+            var rootDevices = _project.Devices.Concat(EnumerateUngroupedDevices()).ToList();
+            var exactMatch = FindDeviceByName(rootDevices, devicePath.Trim('/'));
+            if (exactMatch != null)
+            {
+                return exactMatch;
+            }
+
             var pathSegments = devicePath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
             if (pathSegments.Length == 0)
             {
@@ -97,7 +88,7 @@ namespace TiaMcpServer.Siemens
             // Try top-level device first
             if (pathSegments.Length == 1)
             {
-                return _project.Devices.FirstOrDefault(d => d.Name.Equals(pathSegments[0], StringComparison.OrdinalIgnoreCase));
+                return null;
             }
 
             // Traverse device groups
@@ -111,8 +102,9 @@ namespace TiaMcpServer.Siemens
 
             for (int i = 1; i < pathSegments.Length; i++)
             {
-                // Try to find device in current group
-                var device = group.Devices.FirstOrDefault(d => d.Name.Equals(pathSegments[i], StringComparison.OrdinalIgnoreCase));
+                // Try to find device in current group; the remaining segments may form one name containing '/'
+                var device = FindDeviceByName(group.Devices, string.Join("/", pathSegments.Skip(i)))
+                    ?? FindDeviceByName(group.Devices, pathSegments[i]);
                 if (device != null)
                 {
                     return device;
@@ -129,15 +121,80 @@ namespace TiaMcpServer.Siemens
             return null;
         }
 
+        private static Device? FindDeviceByName(IEnumerable<Device> devices, string name)
+        {
+            return devices.FirstOrDefault(d => d.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        }
+
         private DeviceItem? GetDeviceItemByPath(string deviceItemPath)
+        {
+            if (_project is null || _project.Devices == null || string.IsNullOrWhiteSpace(deviceItemPath))
+            {
+                return null;
+            }
+
+            // A device name can itself contain '/', so check for such a device before splitting the path
+            var deviceItem = GetDeviceItemBySlashDeviceName(deviceItemPath.Trim('/'));
+            if (deviceItem != null)
+            {
+                return deviceItem;
+            }
+
+            // Split the device path by '/' to get each device name
+            var pathSegments = deviceItemPath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+
+            deviceItem = GetDeviceItemBySegments(pathSegments);
+            if (deviceItem != null)
+            {
+                return deviceItem;
+            }
+
+            // devices below the "Ungrouped devices" system group are not part of devices or groups
+            var ungroupedDevices = _project.UngroupedDevicesGroup?.Devices;
+            if (ungroupedDevices != null)
+            {
+                for (int index = 0; index < pathSegments.Length && deviceItem is null; index++)
+                {
+                    deviceItem = GetDeviceItemFromDevice(pathSegments, ungroupedDevices, index);
+                }
+            }
+
+            return deviceItem;
+        }
+
+        /// <summary>
+        /// Handles paths like 'S7-1500/ET200MP station_1/PLC_1' or 'Group1/S7-1500/ET200MP station_1/PLC_1'
+        /// where the device name itself contains '/': the device name is looked up as a whole
+        /// (at the start of the path or after a '/') and the rest of the path names the device item.
+        /// </summary>
+        private DeviceItem? GetDeviceItemBySlashDeviceName(string path)
+        {
+            foreach (var device in EnumerateAllDevices().Where(d => d.Name.IndexOf('/') >= 0))
+            {
+                var prefix = device.Name + "/";
+                var start = path.IndexOf(prefix, StringComparison.OrdinalIgnoreCase);
+                if (start < 0 || (start > 0 && path[start - 1] != '/'))
+                {
+                    continue;
+                }
+
+                var itemName = path.Substring(start + prefix.Length);
+                var deviceItem = device.DeviceItems.FirstOrDefault(di => di.Name.Equals(itemName, StringComparison.OrdinalIgnoreCase));
+                if (deviceItem != null)
+                {
+                    return deviceItem;
+                }
+            }
+
+            return null;
+        }
+
+        private DeviceItem? GetDeviceItemBySegments(string[] pathSegments)
         {
             if (_project is null || _project.Devices == null)
             {
                 return null;
             }
-
-            // Split the device path by '/' to get each device name  
-            var pathSegments = deviceItemPath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
 
             DeviceItem? deviceItem = null;
 
@@ -212,39 +269,85 @@ namespace TiaMcpServer.Siemens
 
         #region get recursive ...
 
-        private bool GetDevicesRecursive(DeviceUserGroup group, List<Device> list, string regexName = "")
+        /// <summary>
+        /// All devices of the open project: top level, every user group (recursively) and the
+        /// "Ungrouped devices" system group, which is a DeviceSystemGroup and not part of DeviceGroups.
+        /// </summary>
+        private IEnumerable<Device> EnumerateAllDevices()
         {
-            var anySuccess = false;
-
-            foreach (var composition in group.Devices)
+            if (_project is null)
             {
-                if (composition is Device device)
+                yield break;
+            }
+
+            if (_project.Devices != null)
+            {
+                foreach (var device in _project.Devices)
                 {
-                    try
-                    {
-                        if (!string.IsNullOrEmpty(regexName) && !Regex.IsMatch(device.Name, regexName, RegexOptions.IgnoreCase))
-                        {
-                            continue; // Skip this device if it doesn't match the pattern
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        // Invalid regex pattern, skip this device
-                        continue;
-                    }
-
-                    list.Add(device);
-
-                    anySuccess = true;
+                    yield return device;
                 }
+            }
+
+            if (_project.DeviceGroups != null)
+            {
+                foreach (var group in _project.DeviceGroups)
+                {
+                    foreach (var device in EnumerateGroupDevices(group))
+                    {
+                        yield return device;
+                    }
+                }
+            }
+
+            foreach (var device in EnumerateUngroupedDevices())
+            {
+                yield return device;
+            }
+        }
+
+        private IEnumerable<Device> EnumerateUngroupedDevices()
+        {
+            var devices = _project?.UngroupedDevicesGroup?.Devices;
+            if (devices is null)
+            {
+                return [];
+            }
+
+            return devices;
+        }
+
+        private static IEnumerable<Device> EnumerateGroupDevices(DeviceUserGroup group)
+        {
+            foreach (var device in group.Devices)
+            {
+                yield return device;
             }
 
             foreach (var subgroup in group.Groups)
             {
-                anySuccess = GetDevicesRecursive(subgroup, list, regexName);
+                foreach (var device in EnumerateGroupDevices(subgroup))
+                {
+                    yield return device;
+                }
+            }
+        }
+
+        private static bool MatchesRegex(Device device, string regexName)
+        {
+            if (string.IsNullOrEmpty(regexName))
+            {
+                return true;
             }
 
-            return anySuccess;
+            try
+            {
+                return Regex.IsMatch(device.Name, regexName, RegexOptions.IgnoreCase);
+            }
+            catch (ArgumentException)
+            {
+                // Invalid regex pattern, skip this device
+                return false;
+            }
         }
 
         #endregion
