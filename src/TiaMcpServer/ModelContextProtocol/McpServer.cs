@@ -649,10 +649,7 @@ namespace TiaMcpServer.ModelContextProtocol
                         continue;
                     }
 
-                    var sameGroup = string.Equals(
-                        Parent(existing.Path),
-                        StripLeadingSystemFolder(groupPath),
-                        StringComparison.OrdinalIgnoreCase);
+                    var sameGroup = IsSameGroup(existing.Path, groupPath);
 
                     items.Add(new ResponseImportPreviewItem
                     {
@@ -715,17 +712,27 @@ namespace TiaMcpServer.ModelContextProtocol
         }
 
         /// <summary>
-        /// A groupPath copied from a preservePath export starts with the localised system folder
-        /// ('PLC data types', 'Program blocks'), which the resolved paths do not carry.
+        /// True when the resolved object path lives in the group named by groupPath. A groupPath
+        /// copied from a preservePath export starts with the localised system folder
+        /// ('PLC data types', 'Program blocks'), which the resolved paths do not carry; a plain
+        /// groupPath does not. The folder name is localised, so both forms are tried instead of
+        /// matching a fixed name.
         /// </summary>
-        private static string StripLeadingSystemFolder(string groupPath)
+        public static bool IsSameGroup(string existingPath, string groupPath)
         {
-            if (string.IsNullOrEmpty(groupPath) || !groupPath.Contains("/"))
+            var existingGroup = Parent(existingPath ?? string.Empty);
+            groupPath ??= string.Empty;
+
+            if (string.Equals(existingGroup, groupPath, StringComparison.OrdinalIgnoreCase))
             {
-                return string.Empty;
+                return true;
             }
 
-            return groupPath.Substring(groupPath.IndexOf('/') + 1);
+            // A lone segment is a real group name; only a segment followed by '/' can be a system folder.
+            var slash = groupPath.IndexOf('/');
+
+            return slash >= 0
+                && string.Equals(existingGroup, groupPath.Substring(slash + 1), StringComparison.OrdinalIgnoreCase);
         }
 
         #endregion
