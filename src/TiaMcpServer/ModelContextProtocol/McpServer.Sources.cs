@@ -96,7 +96,7 @@ namespace TiaMcpServer.ModelContextProtocol
          Description("Write a whole PLC software to one folder tree that mirrors the project, ready to commit: program blocks and PLC data types as readable SIMATIC Source Documents where TIA Portal supports them, tag tables and watch tables as XML, each below its localised system folder. Replaces running the four bulk exports separately. Objects that cannot be exported are reported instead of failing the snapshot")]
         public static ResponseSourceTree ExportPlcAsDocuments(
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
-            [Description("exportPath: directory on this machine that receives the tree; existing files of the same name are overwritten")] string exportPath)
+            [Description("exportPath: directory on this machine that receives the tree; existing files of the same name are overwritten; files are written below <exportPath>/<softwarePath>/")] string exportPath)
         {
             try
             {
@@ -153,7 +153,7 @@ namespace TiaMcpServer.ModelContextProtocol
         public static ResponseGeneratedSource ExportSourceBlock(
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
             [Description("blockPath: root-relative path of the block, e.g. '0_OBs/Main'. Use 'ResolveObjectPath' if you only know the name")] string blockPath,
-            [Description("exportPath: directory on this machine that receives the file; an existing file of the same name is overwritten")] string exportPath,
+            [Description("exportPath: directory on this machine that receives the file; an existing file of the same name is overwritten; files are written below <exportPath>/<softwarePath>/")] string exportPath,
             [Description("withDependencies: also write every object the block uses (called blocks, instance DBs, UDTs) into the same file, so it compiles on its own. Default false")] bool withDependencies = false,
             [Description("preservePath: mirror the project groups below '<exportPath>/Program blocks', as the Export* tools do. Default false, which writes straight into exportPath")] bool preservePath = false)
         {
@@ -168,7 +168,7 @@ namespace TiaMcpServer.ModelContextProtocol
         public static ResponseGeneratedSource ExportSourceType(
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
             [Description("typePath: root-relative path of the PLC data type, e.g. 'Common/BtnTyp_X'. Use 'ResolveObjectPath' if you only know the name")] string typePath,
-            [Description("exportPath: directory on this machine that receives the file; an existing file of the same name is overwritten")] string exportPath,
+            [Description("exportPath: directory on this machine that receives the file; an existing file of the same name is overwritten; files are written below <exportPath>/<softwarePath>/")] string exportPath,
             [Description("withDependencies: also write every data type this one uses into the same file. Default false")] bool withDependencies = false,
             [Description("preservePath: mirror the project groups below '<exportPath>/PLC data types', as the Export* tools do. Default false, which writes straight into exportPath")] bool preservePath = false)
         {
@@ -183,7 +183,7 @@ namespace TiaMcpServer.ModelContextProtocol
         public static ResponseGeneratedSources ExportSourceBlocks(
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
             [Description("groupPath: root-relative path of the block group to export recursively, e.g. '0_OBs'. Empty means all blocks below 'Program blocks'")] string groupPath,
-            [Description("exportPath: directory on this machine that receives the files; existing files of the same name are overwritten")] string exportPath,
+            [Description("exportPath: directory on this machine that receives the files; existing files of the same name are overwritten; files are written below <exportPath>/<softwarePath>/")] string exportPath,
             [Description("withDependencies: also write every object each block uses into its file. Default false, which keeps one object per file")] bool withDependencies = false,
             [Description("preservePath: mirror the project groups below '<exportPath>/Program blocks'. Default false, which writes straight into exportPath, so blocks of the same name in different groups overwrite each other")] bool preservePath = false,
             [Description("regexName: optional regular expression, exports only blocks whose name matches (e.g. '.+HMI_.+'). Filtering happens during the export, so no temporary export or file copying is needed. Empty means all")] string regexName = "")
@@ -199,7 +199,7 @@ namespace TiaMcpServer.ModelContextProtocol
         public static ResponseGeneratedSources ExportSourceTypes(
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
             [Description("groupPath: root-relative path of the type group to export recursively, e.g. 'Common'. Empty means all types below 'PLC data types'")] string groupPath,
-            [Description("exportPath: directory on this machine that receives the files; existing files of the same name are overwritten")] string exportPath,
+            [Description("exportPath: directory on this machine that receives the files; existing files of the same name are overwritten; files are written below <exportPath>/<softwarePath>/")] string exportPath,
             [Description("withDependencies: also write every data type each one uses into its file. Default false")] bool withDependencies = false,
             [Description("preservePath: mirror the project groups below '<exportPath>/PLC data types'. Default false, which writes straight into exportPath, so types of the same name in different groups overwrite each other")] bool preservePath = false,
             [Description("regexName: optional regular expression, exports only types whose name matches. Filtering happens during the export. Empty means all")] string regexName = "")
@@ -214,7 +214,7 @@ namespace TiaMcpServer.ModelContextProtocol
          Description("Use this only when blocks AND PLC data types are wanted together; for only blocks use 'ExportSourceBlocks', for only types use 'ExportSourceTypes'. Writes every block and PLC data type of one PLC software as external source files into a folder tree that mirrors the project groups: '<exportPath>/Program blocks/...' and '<exportPath>/PLC data types/...', one file per object. The whole-PLC counterpart to 'ExportSourceBlocks' and 'ExportSourceTypes' and the compilable counterpart to 'ExportPlcAsDocuments'; 'ImportSources' reads such a tree back. The 'regexName' filter applies to blocks and types alike; to filter only blocks or only types use 'ExportSourceBlocks' or 'ExportSourceTypes' with 'regexName'. Objects with no source form (LAD, FBD, GRAPH), inconsistent objects and know-how protected ones are reported in 'Skipped' instead of failing the run")]
         public static ResponseGeneratedSources ExportSources(
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
-            [Description("exportPath: directory on this machine that receives the tree; existing files of the same name are overwritten")] string exportPath,
+            [Description("exportPath: directory on this machine that receives the tree; existing files of the same name are overwritten; files are written below <exportPath>/<softwarePath>/")] string exportPath,
             [Description("regexName: optional regular expression, exports only objects whose name matches. Empty means all")] string regexName = "",
             [Description("withDependencies: also write every object each one uses into its file. Default false, which keeps one object per file")] bool withDependencies = false)
         {
@@ -379,7 +379,7 @@ namespace TiaMcpServer.ModelContextProtocol
         public static ResponseImportedSources ImportSourceBlocks(
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
             [Description("groupPath: root-relative block user group that receives the blocks, e.g. '0_OBs'. Empty uses each source's default location; the 'Program blocks' root itself is not allowed")] string groupPath,
-            [Description("importPath: directory on this machine that holds the *.db, *.awl and *.scl files")] string importPath,
+            [Description("importPath: directory on this machine that holds the *.db, *.awl and *.scl files; read from <importPath>/<softwarePath>/")] string importPath,
             [Description("regexName: optional regular expression, imports only files whose base name matches. Empty means all")] string regexName = "",
             [Description("preservePath: also read the subfolders of importPath and put each file into the matching subgroup of groupPath, as 'ExportSourceBlocks' with preservePath writes them; a missing subgroup fails that file. Default false, which reads only importPath itself")] bool preservePath = false,
             [Description("keepOnError: keep successfully generated objects even when others in a file fail. Default false, which rolls back a whole file on any error")] bool keepOnError = false)
@@ -394,7 +394,7 @@ namespace TiaMcpServer.ModelContextProtocol
         public static ResponseImportedSources ImportSourceTypes(
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
             [Description("groupPath: root-relative PLC data type user group that receives the types, e.g. 'Common'. Empty uses each source's default location; the 'PLC data types' root itself is not allowed")] string groupPath,
-            [Description("importPath: directory on this machine that holds the *.udt files")] string importPath,
+            [Description("importPath: directory on this machine that holds the *.udt files; read from <importPath>/<softwarePath>/")] string importPath,
             [Description("regexName: optional regular expression, imports only files whose base name matches. Empty means all")] string regexName = "",
             [Description("preservePath: also read the subfolders of importPath and put each file into the matching subgroup of groupPath, as 'ExportSourceTypes' with preservePath writes them; a missing subgroup fails that file. Default false, which reads only importPath itself")] bool preservePath = false,
             [Description("keepOnError: keep successfully generated objects even when others in a file fail. Default false, which rolls back a whole file on any error")] bool keepOnError = false)
@@ -408,7 +408,7 @@ namespace TiaMcpServer.ModelContextProtocol
          Description("Compile every block and PLC data type source file (*.db, *.awl, *.scl, *.udt) under a folder tree back into the project - the whole-PLC counterpart to 'ExportSources'. Each file is placed into the block or PLC data type group its folder path implies, matching the layout 'ExportSources' writes; a folder whose group does not yet exist in the project fails that file rather than being created automatically. Existing blocks/types of the same name are overwritten")]
         public static ResponseImportedSources ImportSources(
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
-            [Description("importPath: directory on this machine to walk recursively for *.db, *.awl, *.scl and *.udt files")] string importPath,
+            [Description("importPath: directory on this machine to walk recursively for *.db, *.awl, *.scl and *.udt files; read from <importPath>/<softwarePath>/")] string importPath,
             [Description("regexName: optional regular expression, imports only files whose base name matches. Empty means all")] string regexName = "",
             [Description("keepOnError: keep successfully generated objects from a file even when others in it fail; TIA Portal then reports no per-object success/failure for that file. Default false, which rolls back a whole file on any error")] bool keepOnError = false)
         {

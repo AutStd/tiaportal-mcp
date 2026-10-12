@@ -223,8 +223,8 @@ namespace TiaMcpServer.Siemens
 
         /// <summary>
         /// Exports one PLC data type as a SIMATIC source document set into
-        /// '&lt;exportPath&gt;' or, with <paramref name="preservePath"/>, into
-        /// '&lt;exportPath&gt;/PLC data types/&lt;groups&gt;'. Filesystem only - it does not modify
+        /// '&lt;exportPath&gt;/&lt;softwarePath&gt;' or, with <paramref name="preservePath"/>, into
+        /// '&lt;exportPath&gt;/&lt;softwarePath&gt;/PLC data types/&lt;groups&gt;'. Filesystem only - it does not modify
         /// the project, so it is not gated behind '--allow-write'.
         /// </summary>
         public DocumentExportInfo ExportTypeAsDocuments(string softwarePath, string typePath, string exportPath, bool preservePath = false)
@@ -233,6 +233,8 @@ namespace TiaMcpServer.Siemens
                 () =>
                 {
                     RequireTiaVersion(MinVersionForTypeDocuments, nameof(ExportTypeAsDocuments));
+
+                    exportPath = ResolveSoftwareRoot(exportPath, softwarePath);
 
                     var type = GetType(softwarePath, typePath)
                         ?? throw new PortalException(PortalErrorCode.NotFound,
@@ -275,6 +277,8 @@ namespace TiaMcpServer.Siemens
                 () =>
                 {
                     RequireTiaVersion(MinVersionForTypeDocuments, nameof(ExportTypesAsDocuments));
+
+                    exportPath = ResolveSoftwareRoot(exportPath, softwarePath);
 
                     var types = GetTypes(softwarePath, regexName).ToArray();
                     var outcome = new TypeDocumentExportResult();
@@ -404,6 +408,8 @@ namespace TiaMcpServer.Siemens
 
                     var group = ResolveTypeGroupForImport(softwarePath, groupPath);
 
+                    importPath = ResolveSoftwareRoot(importPath, softwarePath);
+
                     if (!Directory.Exists(importPath))
                     {
                         throw new PortalException(PortalErrorCode.InvalidParams,
@@ -440,6 +446,8 @@ namespace TiaMcpServer.Siemens
                     RequireTiaVersion(MinVersionForTypeDocuments, nameof(ImportTypesFromDocuments));
 
                     var group = ResolveTypeGroupForImport(softwarePath, groupPath);
+
+                    importPath = ResolveSoftwareRoot(importPath, softwarePath);
 
                     if (!Directory.Exists(importPath))
                     {
@@ -589,7 +597,8 @@ namespace TiaMcpServer.Siemens
                     throw new PortalException(PortalErrorCode.InvalidState, "ExportAsDocuments requires TIA Portal V20 or newer");
                 }
 
-                
+                exportPath = ResolveSoftwareRoot(exportPath, softwarePath);
+
                 var softwareContainer = GetSoftwareContainer(softwarePath);
                 if (softwareContainer?.Software is PlcSoftware plcSoftware)
                 {
@@ -687,6 +696,8 @@ namespace TiaMcpServer.Siemens
                 _logger?.LogWarning("ExportBlocksAsDocuments is only supported on TIA Portal V20 or newer");
                 return null;
             }
+
+            exportPath = ResolveSoftwareRoot(exportPath, softwarePath);
 
             var exportList = new List<PlcBlock>();
             var failures = new List<string>();
@@ -838,6 +849,8 @@ namespace TiaMcpServer.Siemens
                 return false;
             }
 
+            importPath = ResolveSoftwareRoot(importPath, softwarePath);
+
             try
             {
                 var softwareContainer = GetSoftwareContainer(softwarePath);
@@ -890,6 +903,8 @@ namespace TiaMcpServer.Siemens
                 _logger?.LogWarning("ImportBlocksFromDocuments is only supported on TIA Portal V20 or newer");
                 return null;
             }
+
+            importPath = ResolveSoftwareRoot(importPath, softwarePath);
 
             var imported = new List<PlcBlock>();
 

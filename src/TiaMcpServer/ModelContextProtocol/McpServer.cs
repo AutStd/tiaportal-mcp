@@ -605,12 +605,14 @@ namespace TiaMcpServer.ModelContextProtocol
          Description("Report what importing a directory would create, overwrite or collide with, without touching the project. Checks each file against the objects already in the PLC, including the rule that a PLC data type name must be unique across the whole PLC - importing an existing type name into a different group fails even with importOption 'Override'")]
         public static ResponseImportPreview PreviewImport(
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
-            [Description("importPath: directory holding the files to import (.s7dcl source documents or .xml)")] string importPath,
+            [Description("importPath: directory holding the files to import (.s7dcl source documents or .xml); read from <importPath>/<softwarePath>/")] string importPath,
             [Description("kind: what the files contain - 'type' for PLC data types, 'block' for program blocks")] string kind,
             [Description("groupPath: the group the import would target; empty means the root of that area. A leading system folder segment is accepted")] string groupPath = "")
         {
             try
             {
+                importPath = Siemens.Portal.ResolveSoftwareRoot(importPath, softwarePath);
+
                 if (!Directory.Exists(importPath))
                 {
                     throw new McpException($"Import directory '{importPath}' does not exist.");

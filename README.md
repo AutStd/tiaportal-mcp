@@ -40,6 +40,10 @@ of the MCP server entry in your client's JSON configuration and the model no lon
 - Without a preset nothing changes: the argument stays required.
 - `GetState` lists the active presets in `Presets`.
 - A single `--software-path` only fits a project with one PLC; pass `softwarePath` explicitly otherwise.
+- `exportPath` / `importPath` is the base directory shared by all PLCs. Every export and folder-based
+  import works below `<exportPath>/<softwarePath>/`, e.g. `D:\Export\Group1\PLC_1\Program blocks\...`,
+  `...\PLC data types\...` and `...\PLC tags\...`; each `/` in `softwarePath` is a folder level. Imports that
+  take the full path of a single file are unaffected.
 - Prompts (slash commands) are not affected.
 
 ## Write mode

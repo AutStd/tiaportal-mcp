@@ -115,7 +115,7 @@ namespace TiaMcpServer.ModelContextProtocol
         [McpServerTool(Name = "ExportXmlType", Title = "Export type as XML", Destructive = true, Idempotent = true, OpenWorld = false), Description("Export one PLC data type as an XML file named after the type into exportPath, below its group folders when preservePath is true. Inconsistent types are rejected")]
         public static ResponseExportXmlType ExportXmlType(
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
-            [Description("exportPath: defines the path where to export the type")] string exportPath,
+            [Description("exportPath: defines the path where to export the type; files are written below <exportPath>/<softwarePath>/")] string exportPath,
             [Description("typePath: defines the path in the project structure to the type")] string typePath,
             [Description("preservePath: preserves the path/structure of the PLC software")] bool preservePath = false)
         {
@@ -201,7 +201,7 @@ namespace TiaMcpServer.ModelContextProtocol
         public static async Task<ResponseExportXmlTypes> ExportXmlTypes(
             IProgress<ProgressNotificationValue> progress,
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
-            [Description("exportPath: defines the path where to export the types")] string exportPath,
+            [Description("exportPath: defines the path where to export the types; files are written below <exportPath>/<softwarePath>/")] string exportPath,
             [Description("regexName: defines the name or regular expression to find the type. Use empty string (default) to find all")] string regexName = "",
             [Description("preservePath: preserves the path/structure of the PLC software")] bool preservePath = false)
         {

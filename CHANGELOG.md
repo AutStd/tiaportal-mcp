@@ -12,6 +12,8 @@
 
 ### Fixed
 
+- __`GetTypeSource` with `format: xml`__: the type XML export was called with `typePath` and the scratch
+  directory swapped, so the XML fallback for types without a source document could not work.
 - __`ExportSourceBlocks` / `ExportSourceTypes` filter by name__: both tools now take an optional `regexName`
   (also on the prompts) and apply it while collecting the objects. Before, only `ExportSources` could filter,
   and it always exports blocks and types together, so a request like "export all blocks matching `.+HMI_.+`"
@@ -24,6 +26,21 @@
 
 ### Changed
 
+- __BREAKING: exports and imports use `<exportPath>/<softwarePath>/...`__: every export and every
+  folder-based import now works below a folder named after the PLC software, so several PLCs of one
+  project no longer share `Program blocks`, `PLC data types` and `PLC tags`. Each `/` of `softwarePath`
+  is a folder level (`Group1/PLC_1` gives `<exportPath>/Group1/PLC_1/Program blocks/...`). `exportPath`
+  and `importPath` are therefore the base directory, shared by all PLCs; with `--export-path` set once,
+  nothing else changes for the caller. Affects the XML, document and source exports
+  (`ExportXml*`, `Export*AsDocuments`, `ExportSource*`, `ExportSources`, `ExportPlcAsDocuments`),
+  the directory imports (`Import*FromDocuments`, `ImportSources`, `ImportSourceBlocks`,
+  `ImportSourceTypes`), `PreviewImport` and the relative `importPath` of `ImportXmlTagTable`.
+  Imports that take the full path of one file (`ImportXmlBlock`, `ImportXmlType`, `ImportSourceBlock`,
+  `ImportSourceType`, `ImportWatchTable`) are unchanged. Existing exports must be moved into the new
+  folder. A `softwarePath` segment of `.` or `..`, or with characters that are not valid in a folder name,
+  is rejected with `InvalidParams`. The document imports read the files directly in
+  `<importPath>/<softwarePath>`, so they match the flat export layout; a `preservePath` document export
+  has its files in group subfolders and is not read back by them.
 - __`Portal` partial classes consolidated__: the 18 `Portal.*.cs` files are now `Portal.cs`,
   `Portal.Blocks.cs`, `Portal.Types.cs`, `Portal.Tags.cs` and `Portal.Devices.cs`, plus two folders:
   `Siemens/Documents/` (`Portal.Documents.*.cs`, six files) and `Siemens/Software/`

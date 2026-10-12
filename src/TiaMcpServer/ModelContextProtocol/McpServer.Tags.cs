@@ -182,7 +182,7 @@ namespace TiaMcpServer.ModelContextProtocol
         public static ResponseExportXmlTagTable ExportXmlTagTable(
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
             [Description("tagTablePath: root-relative path of the tag table, e.g. 'TagGroup1/Table1'")] string tagTablePath,
-            [Description("exportPath: directory on this machine that receives the XML file")] string exportPath,
+            [Description("exportPath: directory on this machine that receives the XML file; files are written below <exportPath>/<softwarePath>/")] string exportPath,
             [Description("preservePath: recreate the tag table group structure below exportPath, inside the 'PLC tags' system folder as TIA Portal names it in the current interface language")] bool preservePath = false)
         {
             try
@@ -345,7 +345,7 @@ namespace TiaMcpServer.ModelContextProtocol
         public static ResponseExportXmlWatchTable ExportXmlWatchTable(
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
             [Description("watchTablePath: root-relative path of the watch table, e.g. 'WatchGroup1/WatchTable_1'")] string watchTablePath,
-            [Description("exportPath: directory on this machine that receives the XML file")] string exportPath,
+            [Description("exportPath: directory on this machine that receives the XML file; files are written below <exportPath>/<softwarePath>/")] string exportPath,
             [Description("preservePath: recreate the watch table group structure below exportPath")] bool preservePath = false)
         {
             try
@@ -558,9 +558,9 @@ namespace TiaMcpServer.ModelContextProtocol
         public static ResponseImported ImportXmlTagTable(
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
             [Description("groupPath: root-relative tag table group that receives the table; empty uses the PLC tags root. A leading 'PLC tags' segment, as written by preservePath exports, is accepted and ignored")] string groupPath,
-            [Description("importPath: full path of the XML file to import, or a path relative to the 'PLC tags' folder below exportPath (the layout ExportXmlTagTable writes)")] string importPath,
+            [Description("importPath: full path of the XML file to import, or a path relative to the 'PLC tags' folder below <exportPath>/<softwarePath> (the layout ExportXmlTagTable writes)")] string importPath,
             [Description("overwrite: replace an existing tag table of the same name (default true)")] bool overwrite = true,
-            [Description("exportPath: directory that holds the 'PLC tags' folder; only used to resolve a relative importPath")] string exportPath = "")
+            [Description("exportPath: base directory of the export layout (<exportPath>/<softwarePath>/PLC tags); only used to resolve a relative importPath")] string exportPath = "")
         {
             return Guarded(nameof(ImportXmlTagTable), () =>
             {

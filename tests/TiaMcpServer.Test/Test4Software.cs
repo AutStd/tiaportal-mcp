@@ -700,7 +700,7 @@ namespace TiaMcpServer.Test
                     : string.Empty;
 
                 var imported = _portal.ImportTypeFromDocuments(
-                    softwarePath, groupPath, info.Directory, name, ImportDocumentOptions.Override);
+                    softwarePath, groupPath, exportPath, name, ImportDocumentOptions.Override);
 
                 Console.WriteLine($"Round-tripped '{name}': imported {imported.Count} type(s).");
 
@@ -731,7 +731,7 @@ namespace TiaMcpServer.Test
 
             var stage = Path.Combine(Path.GetTempPath(), "TiaMcpServerPreview", Guid.NewGuid().ToString("N"));
 
-            Directory.CreateDirectory(stage);
+            Directory.CreateDirectory(Path.Combine(stage, softwarePath));
 
             Assert.IsTrue(Common.OpenProject(_portal, projectPath), "Failed to open the project");
 
@@ -745,8 +745,8 @@ namespace TiaMcpServer.Test
                 }
 
                 // One file named after a type that exists, one that does not.
-                File.WriteAllText(Path.Combine(stage, existing!.Name + ".s7dcl"), "TYPE\nEND_TYPE\n");
-                File.WriteAllText(Path.Combine(stage, "ZZ_NewType_ZZ.s7dcl"), "TYPE\nEND_TYPE\n");
+                File.WriteAllText(Path.Combine(stage, softwarePath, existing!.Name + ".s7dcl"), "TYPE\nEND_TYPE\n");
+                File.WriteAllText(Path.Combine(stage, softwarePath, "ZZ_NewType_ZZ.s7dcl"), "TYPE\nEND_TYPE\n");
 
                 var typeCountBefore = _portal.GetTypes(softwarePath).Count;
                 var preview = ModelContextProtocol.McpServer.PreviewImport(softwarePath, stage, "type", string.Empty);

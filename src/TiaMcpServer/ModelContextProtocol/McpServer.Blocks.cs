@@ -158,7 +158,7 @@ namespace TiaMcpServer.ModelContextProtocol
         public static ResponseExportXmlBlock ExportXmlBlock(
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
             [Description("blockPath: full path to the block in the project structure, e.g. 'Group/Subgroup/Name' (single names are ambiguous)")] string blockPath,
-            [Description("exportPath: defines the path where to export the block")] string exportPath,
+            [Description("exportPath: defines the path where to export the block; files are written below <exportPath>/<softwarePath>/")] string exportPath,
             [Description("preservePath: preserves the path/structure of the PLC software")] bool preservePath = false)
         {
             try
@@ -328,7 +328,7 @@ namespace TiaMcpServer.ModelContextProtocol
         public static async Task<ResponseExportXmlBlocks> ExportXmlBlocks(
             IProgress<ProgressNotificationValue> progress,
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
-            [Description("exportPath: defines the path where to export the blocks")] string exportPath,
+            [Description("exportPath: defines the path where to export the blocks; files are written below <exportPath>/<softwarePath>/")] string exportPath,
             [Description("regexName: defines the name or regular expression to find the block. Use empty string (default) to find all")] string regexName = "",
             [Description("preservePath: preserves the path/structure of the PLC software")] bool preservePath = false)
         {

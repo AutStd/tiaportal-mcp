@@ -36,6 +36,52 @@ namespace TiaMcpServer.Siemens
         #region resolve
 
         /// <summary>
+        /// The directory below which one PLC software exports to and imports from:
+        /// '&lt;baseDirectory&gt;/&lt;softwarePath&gt;', so several PLCs of one project never share
+        /// the 'Program blocks', 'PLC data types' and 'PLC tags' folders. Every '/' of the
+        /// software path becomes a folder level, like the groups below it. Filesystem only.
+        /// </summary>
+        /// <exception cref="PortalException">
+        /// The base directory or software path is empty, or a software path segment is '.', '..'
+        /// or contains characters that are not valid in a folder name.
+        /// </exception>
+        public static string ResolveSoftwareRoot(string baseDirectory, string softwarePath)
+        {
+            if (string.IsNullOrWhiteSpace(baseDirectory))
+            {
+                throw new PortalException(PortalErrorCode.InvalidParams, "The export/import path is empty.");
+            }
+
+            var segments = (softwarePath ?? string.Empty)
+                .Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
+
+            if (segments.Length == 0)
+            {
+                throw new PortalException(PortalErrorCode.InvalidParams, "The software path is empty.");
+            }
+
+            var invalid = System.IO.Path.GetInvalidFileNameChars();
+
+            foreach (var segment in segments)
+            {
+                // Windows trims trailing dots and spaces, so '.. ' or '...' must not pass as a name.
+                var isUnusable = segment.Trim(' ', '.').Length == 0
+                    || segment != segment.TrimEnd(' ', '.')
+                    || segment.IndexOfAny(invalid) >= 0
+                    || Regex.IsMatch(segment, @"^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\..*)?$", RegexOptions.IgnoreCase);
+
+                if (isUnusable)
+                {
+                    throw new PortalException(
+                        PortalErrorCode.InvalidParams,
+                        $"The software path '{softwarePath}' cannot be used as a folder name (segment '{segment}').");
+                }
+            }
+
+            return System.IO.Path.Combine(new[] { baseDirectory }.Concat(segments).ToArray());
+        }
+
+        /// <summary>
         /// Resolves a software path to its PlcSoftware, throwing rather than returning null so
         /// callers wrapped in Operation.Run get a decorated PortalException.
         /// </summary>

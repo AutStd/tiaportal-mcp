@@ -140,9 +140,9 @@ namespace TiaMcpServer.Siemens
         }
 
         /// <summary>
-        /// Exports one tag table to '&lt;exportPath&gt;/PLC tags/&lt;table&gt;.xml', or, with
+        /// Exports one tag table to '&lt;exportPath&gt;/&lt;softwarePath&gt;/PLC tags/&lt;table&gt;.xml', or, with
         /// <paramref name="preservePath"/>, to
-        /// '&lt;exportPath&gt;/PLC tags/&lt;groups&gt;/&lt;table&gt;.xml' - the system group name
+        /// '&lt;exportPath&gt;/&lt;softwarePath&gt;/PLC tags/&lt;groups&gt;/&lt;table&gt;.xml' - the system group name
         /// as TIA Portal reports it in the current interface language, the same way block and
         /// type exports mirror "Program blocks" and "PLC data types".
         /// Filesystem only - it does not modify the project, so it is not gated behind '--allow-write'.
@@ -155,6 +155,8 @@ namespace TiaMcpServer.Siemens
                     var table = GetTagTable(softwarePath, tagTablePath)
                         ?? throw new PortalException(PortalErrorCode.NotFound,
                             $"Tag table not found at '{tagTablePath}'. Use 'GetTagTables' to list the available tables.");
+
+                    exportPath = ResolveSoftwareRoot(exportPath, softwarePath);
 
                     // Always below the system group folder ('PLC tags'); preservePath adds the table's groups.
                     var pathWithRoot = GetTagTablePath(table, includeSystemRoot: true).Replace('/', '\\');
@@ -407,7 +409,7 @@ namespace TiaMcpServer.Siemens
         }
 
         /// <summary>
-        /// Exports one watch table to '&lt;exportPath&gt;/&lt;table&gt;.xml'. Filesystem only, so
+        /// Exports one watch table to '&lt;exportPath&gt;/&lt;softwarePath&gt;/&lt;table&gt;.xml'. Filesystem only, so
         /// it is not gated behind '--allow-write'.
         /// </summary>
         public PlcWatchTable? ExportXmlWatchTable(string softwarePath, string watchTablePath, string exportPath, bool preservePath = false)
@@ -418,6 +420,8 @@ namespace TiaMcpServer.Siemens
                     var table = GetWatchTable(softwarePath, watchTablePath)
                         ?? throw new PortalException(PortalErrorCode.NotFound,
                             $"Watch table not found at '{watchTablePath}'. Use 'GetWatchTables' to list the available tables.");
+
+                    exportPath = ResolveSoftwareRoot(exportPath, softwarePath);
 
                     var target = preservePath
                         ? Path.Combine(exportPath, GetWatchTablePath(table).Replace('/', '\\') + ".xml")
@@ -542,7 +546,7 @@ namespace TiaMcpServer.Siemens
 
         /// <summary>
         /// Imports one tag table XML file. A rooted <paramref name="importPath"/> is used as is; a
-        /// relative one is looked up in '&lt;exportPath&gt;/PLC tags/' (the folder
+        /// relative one is looked up in '&lt;exportPath&gt;/&lt;softwarePath&gt;/PLC tags/' (the folder
         /// <see cref="ExportXmlTagTable"/> writes to, in the current interface language) when
         /// <paramref name="exportPath"/> is given.
         /// </summary>
@@ -559,7 +563,7 @@ namespace TiaMcpServer.Siemens
                     {
                         var rootName = GetTagTableRootGroup(softwarePath)?.Name ?? "PLC tags";
 
-                        importPath = Path.Combine(exportPath, rootName, importPath);
+                        importPath = Path.Combine(ResolveSoftwareRoot(exportPath, softwarePath), rootName, importPath);
                     }
 
                     if (!File.Exists(importPath))

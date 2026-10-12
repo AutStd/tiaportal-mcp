@@ -77,7 +77,7 @@ namespace TiaMcpServer.Siemens
                         type.Name,
                         maxChars,
                         dir => ExportTypeAsDocuments(softwarePath, typePath, dir).Files.Count > 0,
-                        dir => ExportXmlType(softwarePath, dir, typePath) is not null);
+                        dir => ExportXmlType(softwarePath, typePath, dir) is not null);
                 },
                 ("softwarePath", softwarePath), ("typePath", typePath), ("format", format));
         }
@@ -285,7 +285,7 @@ namespace TiaMcpServer.Siemens
                     // Fail before writing anything when the path is wrong.
                     GetPlcSoftwareOrThrow(softwarePath);
 
-                    var result = new SourceTreeResult { Directory = exportPath };
+                    var result = new SourceTreeResult { Directory = ResolveSoftwareRoot(exportPath, softwarePath) };
 
                     // Blocks: documents when the Portal is new enough, XML otherwise, since a
                     // snapshot missing every block would be worse than a less readable one.
@@ -450,6 +450,8 @@ namespace TiaMcpServer.Siemens
                 {
                     var group = GetSourceSystemGroup(softwarePath);
 
+                    exportPath = ResolveSoftwareRoot(exportPath, softwarePath);
+
                     var block = GetBlock(softwarePath, blockPath)
                         ?? throw new PortalException(PortalErrorCode.NotFound,
                             $"Block not found at '{blockPath}'. Use 'ResolveObjectPath' or 'GetBlocks' to find its path.");
@@ -489,6 +491,8 @@ namespace TiaMcpServer.Siemens
                 () =>
                 {
                     var group = GetSourceSystemGroup(softwarePath);
+
+                    exportPath = ResolveSoftwareRoot(exportPath, softwarePath);
 
                     var type = GetType(softwarePath, typePath)
                         ?? throw new PortalException(PortalErrorCode.NotFound,
@@ -535,6 +539,8 @@ namespace TiaMcpServer.Siemens
                     // Fail before writing anything when the path is wrong.
                     var group = GetSourceSystemGroup(softwarePath);
 
+                    exportPath = ResolveSoftwareRoot(exportPath, softwarePath);
+
                     var result = new GeneratedSourcesResult { Directory = exportPath };
 
                     GenerateBlocks(result, group, GetBlocks(softwarePath, regexName), exportPath, withDependencies, preservePath: true);
@@ -579,6 +585,8 @@ namespace TiaMcpServer.Siemens
                     var blocks = new List<PlcBlock>();
                     GetBlocksRecursive(group, blocks, regexName);
 
+                    exportPath = ResolveSoftwareRoot(exportPath, softwarePath);
+
                     var result = new GeneratedSourcesResult { Directory = exportPath };
 
                     GenerateBlocks(result, sourceGroup, blocks, exportPath, withDependencies, preservePath);
@@ -616,6 +624,8 @@ namespace TiaMcpServer.Siemens
 
                     var types = new List<PlcType>();
                     GetTypesRecursive(group, types, regexName);
+
+                    exportPath = ResolveSoftwareRoot(exportPath, softwarePath);
 
                     var result = new GeneratedSourcesResult { Directory = exportPath };
 
@@ -1017,6 +1027,8 @@ namespace TiaMcpServer.Siemens
             bool includeTypes)
         {
             var software = GetPlcSoftwareOrThrow(softwarePath);
+
+            importPath = ResolveSoftwareRoot(importPath, softwarePath);
 
             if (!Directory.Exists(importPath))
             {

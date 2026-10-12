@@ -144,6 +144,8 @@ namespace TiaMcpServer.Siemens
                     throw new PortalException(PortalErrorCode.InvalidState, "Type is inconsistent; TIA Portal does not export inconsistent types.");
                 }
 
+                exportPath = ResolveSoftwareRoot(exportPath, softwarePath);
+
                 if (preservePath)
                 {
                     var groupPath = "";
@@ -158,6 +160,8 @@ namespace TiaMcpServer.Siemens
                 {
                     exportPath = Path.Combine(exportPath, $"{type.Name}.xml");
                 }
+
+                Directory.CreateDirectory(Path.GetDirectoryName(exportPath)!);
 
                 if (File.Exists(exportPath))
                 {
@@ -236,6 +240,8 @@ namespace TiaMcpServer.Siemens
             {
                 return null;
             }
+
+            exportPath = ResolveSoftwareRoot(exportPath, softwarePath);
 
             var exportList = new List<PlcType>();
             var failures = new List<string>();

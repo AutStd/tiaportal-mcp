@@ -166,6 +166,8 @@ namespace TiaMcpServer.Siemens
                     throw new PortalException(PortalErrorCode.NotFound, "Block not found");
                 }
 
+                exportPath = ResolveSoftwareRoot(exportPath, softwarePath);
+
                 if (preservePath)
                 {
                     var groupPath = "";
@@ -186,6 +188,8 @@ namespace TiaMcpServer.Siemens
                 {
                     throw new PortalException(PortalErrorCode.InvalidState, "Block is inconsistent; TIA Portal does not export inconsistent blocks.");
                 }
+
+                Directory.CreateDirectory(Path.GetDirectoryName(exportPath)!);
 
                 if (File.Exists(exportPath))
                 {
@@ -266,9 +270,11 @@ namespace TiaMcpServer.Siemens
                 return null;
             }
 
+            exportPath = ResolveSoftwareRoot(exportPath, softwarePath);
+
             var exportList = new List<PlcBlock>();
             var failures = new List<string>();
-            
+
             PlcBlock[] list;
 
             try

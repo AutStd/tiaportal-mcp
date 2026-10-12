@@ -135,7 +135,7 @@ Use the GetSoftwareTree tool with these parameters:
 
 Common parameter values:
 - softwarePath: normally something like 'PLC_1' for hardware PLC, 'PC-System_1/Software PLC_1' for PC based PLC; in a slash command write a value with spaces in double quotes, e.g. ""PC-System_1/Software PLC_1""
-- exportPath: '${{workspacefolder}}/export/Program blocks' is a good default
+- exportPath: '${{workspacefolder}}/export' is a good default; files are written below <exportPath>/<softwarePath>/
 - regexName: Use empty string """" for all blocks, or patterns like ""FB_.*"" for function blocks
 - preservePath: Use false for flat export, true to maintain folder structure
 
@@ -153,7 +153,7 @@ Use the ExportXmlBlocks tool with these parameters:
 
 Common parameter values:
 - softwarePath: normally something like 'PLC_1' for hardware PLC, 'PC-System_1/Software PLC_1' for PC based PLC; in a slash command write a value with spaces in double quotes, e.g. ""PC-System_1/Software PLC_1""
-- exportPath: '${{workspacefolder}}/export/Plc data types' is a good default
+- exportPath: '${{workspacefolder}}/export' is a good default; files are written below <exportPath>/<softwarePath>/
 - regexName: Use empty string """" for all types, or patterns like ""Typ_.*""
 - preservePath: Use false for flat export, true to maintain folder structure
 
@@ -191,7 +191,7 @@ Use the ExportBlocksAsDocuments tool with these parameters:
 Common parameter values:
 - softwarePath: normally something like 'PLC_1' for hardware PLC, 'PC-System_1/Software PLC_1' for PC based PLC; in a slash command write a value with spaces in double quotes, e.g. ""PC-System_1/Software PLC_1""
 - tagTablePath: root-relative path of the tag table, e.g. 'TagGroup1/Table1'. Use the GetTagTables tool to list the tag tables of a PLC software
-- exportPath: '${{workspacefolder}}/export/PLC tags' is a good default
+- exportPath: '${{workspacefolder}}/export' is a good default; files are written below <exportPath>/<softwarePath>/
 - preservePath: Use false for a flat export, true to maintain the tag table group structure
 
 Use the ExportXmlTagTable tool with these parameters:
@@ -211,7 +211,7 @@ Common parameter values:
 - blockPath: root-relative path of the block, e.g. '0_OBs/Main'. Use the ResolveObjectPath tool if you only know the name
 - exportPath: '${{workspacefolder}}/export/Sources' is a good default
 - withDependencies: Use true to also write called blocks, instance DBs and UDTs into the same file so it compiles on its own, false for one file per object
-- preservePath: Use false to write straight into exportPath, true to mirror the project groups below 'Program blocks'
+- preservePath: Use false to write straight into <exportPath>/<softwarePath>, true to mirror the project groups below 'Program blocks'
 
 The extension follows the block: '.db' for data blocks, '.scl' for SCL blocks, '.awl' for STL blocks. LAD, FBD and GRAPH blocks have no source form; use the ExportXmlBlock tool for those.
 
@@ -233,7 +233,7 @@ Common parameter values:
 - typePath: root-relative path of the PLC data type, e.g. 'Common/BtnTyp_X'. Use the ResolveObjectPath tool if you only know the name
 - exportPath: '${{workspacefolder}}/export/Sources' is a good default
 - withDependencies: Use true to also write every data type this one uses into the same file, false for one file per type
-- preservePath: Use false to write straight into exportPath, true to mirror the project groups below 'PLC data types'
+- preservePath: Use false to write straight into <exportPath>/<softwarePath>, true to mirror the project groups below 'PLC data types'
 
 Use the ExportSourceType tool with these parameters:
 - softwarePath: {softwarePath}
@@ -322,7 +322,7 @@ Use the ExportTypesAsDocuments tool with these parameters:
 Common parameter values:
 - softwarePath: e.g. 'PLC_1' for hardware PLC
 - groupPath: optional, e.g. 'Program blocks/FBs'
-- importPath: folder containing .s7dcl/.s7res files
+- importPath: folder containing .s7dcl/.s7res files; read from <importPath>/<softwarePath>/
 - fileNameWithoutExtension: e.g. 'FC_DateTime'
 - importOption: 'Override' (default), 'None', 'SkipInactiveCultures', 'ActivateInactiveCultures'
 
@@ -344,7 +344,7 @@ Use the ImportFromDocuments tool with these parameters:
 Common parameter values:
 - softwarePath: e.g. 'PLC_1' for hardware PLC
 - groupPath: optional target group, empty for the 'PLC data types' root. A leading 'PLC data types' segment from a preservePath export is accepted
-- importPath: folder holding the document files
+- importPath: folder holding the document files; read from <importPath>/<softwarePath>/
 - regexName: empty for all, or e.g. 'UDT_.*'
 - importOption: 'Override' (default), 'None', 'SkipInactiveCultures', 'ActivateInactiveCultures'
 
@@ -366,7 +366,7 @@ Use the ImportTypesFromDocuments tool with these parameters:
 Common parameter values:
 - softwarePath: e.g. 'PLC_1' for hardware PLC
 - groupPath: optional target group path, empty for root
-- importPath: folder containing .s7dcl/.s7res files
+- importPath: folder containing .s7dcl/.s7res files; read from <importPath>/<softwarePath>/
 - regexName: empty for all, or e.g. 'FB_.*'
 - importOption: 'Override' (default), 'None', 'SkipInactiveCultures', 'ActivateInactiveCultures'
 
@@ -391,7 +391,7 @@ Use the ImportBlocksFromDocuments tool with these parameters:
 
 Common parameter values:
 - softwarePath: e.g. 'PLC_1' for hardware PLC
-- importPath: folder to walk recursively, typically the tree the ExportSources tool wrote. Each file goes into the block or PLC data type group its folder path implies; the group must already exist
+- importPath: folder to walk recursively, typically the tree the ExportSources tool wrote. Each file goes into the block or PLC data type group its folder path implies; the group must already exist; read from <importPath>/<softwarePath>/
 - regexName: empty for all, or e.g. 'FB_.*' to select files by base name (use one file name to import a single object)
 - keepOnError: Use false (default) to roll back a whole file on any error, true to keep the objects of a file that were generated successfully
 
@@ -446,7 +446,7 @@ Use the ImportSourceType tool with these parameters:
 Common parameter values:
 - softwarePath: e.g. 'PLC_1' for hardware PLC
 - groupPath: block user group that receives the blocks, e.g. '0_OBs'. Empty for each source's default location; the 'Program blocks' root itself is not allowed
-- importPath: folder with the source files, typically the one the ExportSourceBlocks tool wrote
+- importPath: folder with the source files, typically the one the ExportSourceBlocks tool wrote; read from <importPath>/<softwarePath>/
 - regexName: empty for all, or e.g. 'FB_.*' to select files by base name
 - preservePath: Use false (default) to read only the files directly in importPath, true to also read its subfolders into the matching subgroups of groupPath (the groups must already exist)
 - keepOnError: Use false (default) to roll back a whole file on any error, true to keep the objects of a file that were generated successfully
@@ -470,7 +470,7 @@ Use the ImportSourceBlocks tool with these parameters:
 Common parameter values:
 - softwarePath: e.g. 'PLC_1' for hardware PLC
 - groupPath: PLC data type user group that receives the types, e.g. 'Common'. Empty for each source's default location; the 'PLC data types' root itself is not allowed
-- importPath: folder with the .udt files, typically the one the ExportSourceTypes tool wrote
+- importPath: folder with the .udt files, typically the one the ExportSourceTypes tool wrote; read from <importPath>/<softwarePath>/
 - regexName: empty for all, or e.g. 'UDT_.*' to select files by base name
 - preservePath: Use false (default) to read only the files directly in importPath, true to also read its subfolders into the matching subgroups of groupPath (the groups must already exist)
 - keepOnError: Use false (default) to roll back a whole file on any error, true to keep the objects of a file that were generated successfully
@@ -582,7 +582,7 @@ Use the OpenTiaProject tool with these parameters:
 
 Common parameter values:
 - softwarePath: defines the path in the project structure to the PLC software
-- importPath: directory holding the files to import (.s7dcl source documents or .xml)
+- importPath: directory holding the files to import (.s7dcl source documents or .xml); read from <importPath>/<softwarePath>/
 - kind: what the files contain - 'type' for PLC data types, 'block' for program blocks
 - groupPath: the group the import would target; empty means the root of that area. A leading system folder segment is accepted
 
@@ -1265,7 +1265,7 @@ Common parameter values:
 - softwarePath: defines the path in the project structure to the PLC software
 - watchTablePath: root-relative path of the watch table, e.g. 'WatchGroup1/WatchTable_1'
 - exportPath: directory on this machine that receives the XML file
-- preservePath: recreate the watch table group structure below exportPath
+- preservePath: recreate the watch table group structure below <exportPath>/<softwarePath>
 
 Use the ExportXmlWatchTable tool with these parameters:
 - softwarePath: {softwarePath}
@@ -1593,7 +1593,7 @@ Common parameter values:
 - softwarePath: defines the path in the project structure to the PLC software
 - typePath: root-relative path of the PLC data type, e.g. 'Common/BtnTyp_X'. Use 'GetTypes' to list them
 - exportPath: directory on this machine that receives the document files
-- preservePath: recreate the group structure below exportPath, inside the 'PLC data types' system folder as TIA Portal names it in the current interface language
+- preservePath: recreate the group structure below <exportPath>/<softwarePath>, inside the 'PLC data types' system folder as TIA Portal names it in the current interface language
 
 Use the ExportTypeAsDocuments tool with these parameters:
 - softwarePath: {softwarePath}
@@ -1704,7 +1704,7 @@ Common parameter values:
 - groupPath: root-relative path of the block group to export recursively, e.g. '0_OBs'. Empty means all blocks below 'Program blocks'
 - exportPath: directory on this machine that receives the files; existing files of the same name are overwritten
 - withDependencies: also write every object each block uses into its file. Default false
-- preservePath: mirror the project groups below '<exportPath>/Program blocks'. Default false, which writes straight into exportPath
+- preservePath: mirror the project groups below '<exportPath>/<softwarePath>/Program blocks'. Default false, which writes straight into <exportPath>/<softwarePath>
 - regexName: optional regular expression, exports only blocks whose name matches; filtered during the export. Empty means all
 
 Use the ExportSourceBlocks tool with these parameters:
@@ -1726,7 +1726,7 @@ Common parameter values:
 - groupPath: root-relative path of the type group to export recursively, e.g. 'Common'. Empty means all types below 'PLC data types'
 - exportPath: directory on this machine that receives the files; existing files of the same name are overwritten
 - withDependencies: also write every data type each one uses into its file. Default false
-- preservePath: mirror the project groups below '<exportPath>/PLC data types'. Default false, which writes straight into exportPath
+- preservePath: mirror the project groups below '<exportPath>/<softwarePath>/PLC data types'. Default false, which writes straight into <exportPath>/<softwarePath>
 - regexName: optional regular expression, exports only types whose name matches; filtered during the export. Empty means all
 
 Use the ExportSourceTypes tool with these parameters:
@@ -1741,7 +1741,7 @@ Use the ExportSourceTypes tool with these parameters:
         [McpServerPrompt(Name = "ExportSources"), Description("Export all blocks and PLC data types as source files")]
         public static string ExportSources(string softwarePath, string exportPath, string regexName = "", string withDependencies = "false")
         {
-            return $@"Write every block and PLC data type of one PLC software as external source files into a folder tree that mirrors the project groups: '<exportPath>/Program blocks/...' and '<exportPath>/PLC data types/...', one file per object. The whole-PLC counterpart to 'ExportSourceBlocks' and 'ExportSourceTypes' and the compilable counterpart to 'ExportPlcAsDocuments'; 'ImportSources' reads such a tree back. Objects with no source form (LAD, FBD, GRAPH), inconsistent objects and know-how protected ones are reported in 'Skipped' instead of failing the run.
+            return $@"Write every block and PLC data type of one PLC software as external source files into a folder tree that mirrors the project groups: '<exportPath>/<softwarePath>/Program blocks/...' and '<exportPath>/<softwarePath>/PLC data types/...', one file per object. The whole-PLC counterpart to 'ExportSourceBlocks' and 'ExportSourceTypes' and the compilable counterpart to 'ExportPlcAsDocuments'; 'ImportSources' reads such a tree back. Objects with no source form (LAD, FBD, GRAPH), inconsistent objects and know-how protected ones are reported in 'Skipped' instead of failing the run.
 
 Common parameter values:
 - softwarePath: defines the path in the project structure to the PLC software

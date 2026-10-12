@@ -19,14 +19,14 @@
         public const string Project1PlcSoftwarePath5 = "Group1/Group1.1/PC-System_1.1/Software PLC_1.1";
         public const string Project1PlcSoftwarePath6 = "Group1/Group1.1/Group1.1.1/PLC_1.1.1";
         public const string Project1PlcSoftwarePath7 = "Group1/Group1.1/Group1.1.1/PC-System_1.1.1/Software PLC_1.1.1";
-        public const string Project1ExportPath0 = "D:\\Temp\\TIA-Portal\\Project1\\PLC_0";
-        public const string Project1ExportPath1 = "D:\\Temp\\TIA-Portal\\Project1\\PC-System_0\\Software PLC_0";
-        public const string Project1ExportPath2 = "D:\\Temp\\TIA-Portal\\Project1\\Group1\\PLC_1";
-        public const string Project1ExportPath3 = "D:\\Temp\\TIA-Portal\\Project1\\Group1\\PC-System_1\\Software PLC_1";
-        public const string Project1ExportPath4 = "D:\\Temp\\TIA-Portal\\Project1\\Group1\\Group1.1\\PLC_1.1";
-        public const string Project1ExportPath5 = "D:\\Temp\\TIA-Portal\\Project1\\Group1\\Group1.1\\PC-System_1.1\\Software PLC_1.1";
-        public const string Project1ExportPath6 = "D:\\Temp\\TIA-Portal\\Project1\\Group1\\Group1.1\\Group1.1.1\\PLC_1.1.1";
-        public const string Project1ExportPath7 = "D:\\Temp\\TIA-Portal\\Project1\\Group1\\Group1.1\\Group1.1.1\\PC-System_1.1.1\\Software PLC_1.1.1";
+        public const string Project1ExportPath0 = "D:\\Temp\\TIA-Portal\\Project0";
+        public const string Project1ExportPath1 = "D:\\Temp\\TIA-Portal\\Project1";
+        public const string Project1ExportPath2 = "D:\\Temp\\TIA-Portal\\Project2";
+        public const string Project1ExportPath3 = "D:\\Temp\\TIA-Portal\\Project3";
+        public const string Project1ExportPath4 = "D:\\Temp\\TIA-Portal\\Project4";
+        public const string Project1ExportPath5 = "D:\\Temp\\TIA-Portal\\Project5";
+        public const string Project1ExportPath6 = "D:\\Temp\\TIA-Portal\\Project6";
+        public const string Project1ExportPath7 = "D:\\Temp\\TIA-Portal\\Project7";
 
         public const int TiaMajorVersion = 21;
     }
