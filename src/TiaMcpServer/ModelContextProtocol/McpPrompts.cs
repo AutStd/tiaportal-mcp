@@ -665,17 +665,33 @@ Use the GetSoftwareInfo tool with these parameters:
 - softwarePath: {softwarePath}";
         }
 
-        [McpServerPrompt(Name = "CompileSoftware"), Description("Compile a PLC software and list every compiler message")]
-        public static string CompileSoftware(string softwarePath, string password = "")
+        [McpServerPrompt(Name = "CompilePlcSoftware"), Description("Compile a whole PLC software and list every compiler message")]
+        public static string CompilePlcSoftware(string softwarePath, string password = "")
         {
-            return $@"Compile the software and report every compiler message with the object it belongs to, so errors can be fixed without re-reading the whole PLC. Warnings are reported as a successful compile with detail; errors set meta.success to false and the call still returns every message.
+            return $@"Compile the whole PLC software and report every compiler message with the object it belongs to, so errors can be fixed without re-reading the whole PLC. Warnings are reported as a successful compile with detail; errors set meta.success to false and the call still returns every message.
 
 Common parameter values:
-|- softwarePath: defines the path in the project structure to the software
+- softwarePath: defines the path in the project structure to the software
 - password: the password to access administration, default: no password
 
-Use the CompileSoftware tool with these parameters:
+Use the CompilePlcSoftware tool with these parameters:
 - softwarePath: {softwarePath}
+- password: {password}";
+        }
+
+        [McpServerPrompt(Name = "CompileCodeBlock"), Description("Compile a single code block and list its compiler messages")]
+        public static string CompileCodeBlock(string softwarePath, string blockPath, string password = "")
+        {
+            return $@"Compile a single code block (OB, FC, FB or DB) and report its compiler messages with the object each belongs to. Warnings are reported as a successful compile with detail; errors set meta.success to false and the call still returns every message.
+
+Common parameter values:
+- softwarePath: defines the path in the project structure to the software
+- blockPath: defines the path in the project structure to the block, e.g. '0_OBs/Main_1'
+- password: the password to access administration, default: no password
+
+Use the CompileCodeBlock tool with these parameters:
+- softwarePath: {softwarePath}
+- blockPath: {blockPath}
 - password: {password}";
         }
 

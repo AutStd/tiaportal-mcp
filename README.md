@@ -82,7 +82,7 @@ Read-only tools (68) are always available.
 | Portal and state              | `GetPortals`, `Connect`, `Disconnect`, `GetState`, `Doctor`                                                                                        |
 | Project and session           | `GetProject`, `OpenProject`, `SaveProject`, `SaveAsProject`, `CloseProject`                                                                        |
 | Devices                       | `GetProjectTree`, `GetDevices`, `GetDeviceInfo`, `GetDeviceItemInfo`                                                                               |
-| PLC software                  | `GetSoftwareInfo`, `GetSoftwareTree`, `CompileSoftware`                                                                                            |
+| PLC software                  | `GetSoftwareInfo`, `GetSoftwareTree`, `CompilePlcSoftware`, `CompileCodeBlock`                                                                     |
 | Blocks                        | `GetBlocks`, `GetBlockInfo`, `GetBlocksWithHierarchy`, `ExportXmlBlock`, `ExportXmlBlocks`, `ImportXmlBlock`                                       |
 | Types                         | `GetTypes`, `GetTypeInfo`, `ExportXmlType`, `ExportXmlTypes`, `ImportXmlType`                                                                      |
 | Tags and constants            | `GetTagTables`, `GetTagTableInfo`, `GetTags`, `GetTagInfo`, `GetConstants`, `ExportXmlTagTable`                                                    |

@@ -51,15 +51,15 @@ namespace TiaMcpServer.ModelContextProtocol
             }
         }
 
-        [McpServerTool(Name = "CompileSoftware", Title = "Compile software", Destructive = false, Idempotent = true, OpenWorld = false, UseStructuredContent = true),
-         Description("Compile the PLC software and report every compiler message with the object it belongs to, so errors can be fixed without re-reading the whole PLC. Warnings are reported as a successful compile with detail; errors set meta.success to false and the call still returns every message")]
-        public static ResponseCompileSoftware CompileSoftware(
+        [McpServerTool(Name = "CompilePlcSoftware", Title = "Compile PLC software", Destructive = false, Idempotent = true, OpenWorld = false, UseStructuredContent = true),
+         Description("Compile the whole PLC software and report every compiler message with the object it belongs to, so errors can be fixed without re-reading the whole PLC. Warnings are reported as a successful compile with detail; errors set meta.success to false and the call still returns every message. To compile a single block use 'CompileCodeBlock'")]
+        public static ResponseCompile CompilePlcSoftware(
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
             [Description("password: the password to access adminsitration, default: no password")] string password = "")
         {
             try
             {
-                var result = Portal.CompileSoftware(softwarePath, password);
+                var result = Portal.CompilePlcSoftware(softwarePath, password);
 
                 if (result == null)
                 {
@@ -68,49 +68,78 @@ namespace TiaMcpServer.ModelContextProtocol
                         "('GetProjectTree' lists them) and, for a safety program, that 'password' is correct.");
                 }
 
-                var messages = FlattenCompilerMessages(result.Messages, 0).ToList();
-                var state = result.State.ToString();
-                var failed = result.State == CompilerResultState.Error;
-
-                var response = new ResponseCompileSoftware
-                {
-                    Message = $"Compiling '{softwarePath}' {(failed ? "failed" : "finished")} with state '{state}': " +
-                              $"{result.ErrorCount} error(s), {result.WarningCount} warning(s)",
-                    State = state,
-                    ErrorCount = result.ErrorCount,
-                    WarningCount = result.WarningCount,
-                    Messages = messages,
-                    Meta = new JsonObject
-                    {
-                        ["timestamp"] = DateTime.Now,
-                        ["success"] = !failed,
-                        ["state"] = state,
-                        ["errorCount"] = result.ErrorCount,
-                        ["warningCount"] = result.WarningCount,
-                        ["messageCount"] = messages.Count
-                    }
-                };
-
-                if (failed)
-                {
-                    // The message text is what a client surfaces, so name the first few offenders
-                    // rather than making the caller re-query to find out what broke.
-                    var offenders = messages
-                        .Where(m => string.Equals(m.State, nameof(CompilerResultState.Error), StringComparison.OrdinalIgnoreCase))
-                        .Take(5)
-                        .Select(m => $"{m.Path}: {m.Description}");
-
-                    throw new McpException(
-                        $"Compiling '{softwarePath}' failed with {result.ErrorCount} error(s). " +
-                        string.Join(" | ", offenders));
-                }
-
-                return response;
+                return BuildCompileResponse(result, softwarePath);
             }
             catch (Exception ex) when (ex is not McpException)
             {
                 throw new McpException($"Unexpected error compiling software '{softwarePath}': {ex.Message}", ex);
             }
+        }
+
+        [McpServerTool(Name = "CompileCodeBlock", Title = "Compile code block", Destructive = false, Idempotent = true, OpenWorld = false, UseStructuredContent = true),
+         Description("Compile a single code block (OB, FC, FB or DB) and report its compiler messages with the object each belongs to. Warnings are reported as a successful compile with detail; errors set meta.success to false and the call still returns every message. To compile the whole PLC use 'CompilePlcSoftware'")]
+        public static ResponseCompile CompileCodeBlock(
+            [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
+            [Description("blockPath: defines the path in the project structure to the block, e.g. '0_OBs/Main_1'")] string blockPath,
+            [Description("password: the password to access adminsitration, default: no password")] string password = "")
+        {
+            try
+            {
+                var result = Portal.CompileCodeBlock(softwarePath, blockPath, password);
+
+                if (result == null)
+                {
+                    throw new McpException(
+                        $"Failed compiling block '{blockPath}' in '{softwarePath}'. Check that the block exists " +
+                        "('GetBlocks' lists them) and, for a safety program, that 'password' is correct.");
+                }
+
+                return BuildCompileResponse(result, blockPath);
+            }
+            catch (Exception ex) when (ex is not McpException)
+            {
+                throw new McpException($"Unexpected error compiling block '{blockPath}': {ex.Message}", ex);
+            }
+        }
+
+        private static ResponseCompile BuildCompileResponse(CompilerResult result, string target)
+        {
+            var messages = FlattenCompilerMessages(result.Messages, 0).ToList();
+            var state = result.State.ToString();
+            var failed = result.State == CompilerResultState.Error;
+
+            if (failed)
+            {
+                // The message text is what a client surfaces, so name the first few offenders
+                // rather than making the caller re-query to find out what broke.
+                var offenders = messages
+                    .Where(m => string.Equals(m.State, nameof(CompilerResultState.Error), StringComparison.OrdinalIgnoreCase))
+                    .Take(5)
+                    .Select(m => $"{m.Path}: {m.Description}");
+
+                throw new McpException(
+                    $"Compiling '{target}' failed with {result.ErrorCount} error(s). " +
+                    string.Join(" | ", offenders));
+            }
+
+            return new ResponseCompile
+            {
+                Message = $"Compiling '{target}' finished with state '{state}': " +
+                          $"{result.ErrorCount} error(s), {result.WarningCount} warning(s)",
+                State = state,
+                ErrorCount = result.ErrorCount,
+                WarningCount = result.WarningCount,
+                Messages = messages,
+                Meta = new JsonObject
+                {
+                    ["timestamp"] = DateTime.Now,
+                    ["success"] = true,
+                    ["state"] = state,
+                    ["errorCount"] = result.ErrorCount,
+                    ["warningCount"] = result.WarningCount,
+                    ["messageCount"] = messages.Count
+                }
+            };
         }
 
         /// <summary>

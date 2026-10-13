@@ -4,6 +4,10 @@
 
 ### Added
 
+- __`CompileCodeBlock`__: compiles a single code block (OB, FC, FB or DB) through the block's `ICompilable`
+  service and reports its compiler messages in the same structure as `CompilePlcSoftware`. Takes
+  `softwarePath`, `blockPath` and an optional `password` for safety programs.
+
 - __`GetOpenLibraries` and `GetReferencedLibraries`__: the first library support, read-only.
   `GetOpenLibraries` lists the project library and the global libraries open in TIA Portal (user,
   system, corporate) with `kind`, `name`, `path`, `isReadOnly`, `isModified` and the full attribute
@@ -20,6 +24,10 @@
   reports the active presets. Prompts are unchanged.
 
 ### Changed
+
+- __Breaking: `CompileSoftware` renamed to `CompilePlcSoftware`__: the name now says it compiles the whole
+  PLC software, as opposed to the new `CompileCodeBlock`. Behaviour and parameters are unchanged; the tool
+  and the prompt both carry the new name and no alias for the old one is kept.
 
 - __`CompileSoftware` returns the full result on compile errors__: it used to throw an exception naming only
   the first 5 errors, discarding the message list it had already built. It now returns `Messages[]`,

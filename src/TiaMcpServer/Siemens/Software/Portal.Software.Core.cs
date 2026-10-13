@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Siemens.Engineering;
 using Siemens.Engineering.Compiler;
 using Siemens.Engineering.HW;
 using Siemens.Engineering.HW.Features;
@@ -40,7 +41,7 @@ namespace TiaMcpServer.Siemens
             return null;
         }
 
-        public CompilerResult? CompileSoftware(string softwarePath, string password = "")
+        public CompilerResult? CompilePlcSoftware(string softwarePath, string password = "")
         {
             _logger?.LogInformation($"Compiling software by path: {softwarePath}");
 
@@ -51,45 +52,75 @@ namespace TiaMcpServer.Siemens
 
             var softwareContainer = GetSoftwareContainer(softwarePath);
 
-            if (!string.IsNullOrEmpty(password))
+            if (!TryLoginSafetyOffline(softwareContainer, password))
             {
-                var deviceItem = softwareContainer?.Parent as DeviceItem;
-
-                var admin = deviceItem?.GetService<SafetyAdministration>();
-                if (admin != null)
-                {
-                    if (!admin.IsLoggedOnToSafetyOfflineProgram)
-                    {
-                        SecureString secString = new NetworkCredential("", password).SecurePassword;
-                        try
-                        {
-                            admin.LoginToSafetyOfflineProgram(secString);
-                        }
-                        catch (Exception)
-                        {
-                            return null; // "Error, login to safety offline program failed";
-                        }
-                    }
-                }
+                return null; // "Error, login to safety offline program failed";
             }
 
             if (softwareContainer?.Software is PlcSoftware plcSoftware)
             {
-                try
-                {
-                    ICompilable compileService = plcSoftware.GetService<ICompilable>();
-
-                    CompilerResult result = compileService.Compile();
-
-                    return result;
-                }
-                catch (Exception)
-                {
-                    return null; // "Error, compiling failed";
-                }
+                return CompileService(plcSoftware);
             }
 
             return null; // "Error";
+        }
+
+        public CompilerResult? CompileCodeBlock(string softwarePath, string blockPath, string password = "")
+        {
+            _logger?.LogInformation($"Compiling code block by path: {blockPath}");
+
+            if (IsProjectNull())
+            {
+                return null; // "Error, no project";
+            }
+
+            var softwareContainer = GetSoftwareContainer(softwarePath);
+
+            if (!TryLoginSafetyOffline(softwareContainer, password))
+            {
+                return null; // "Error, login to safety offline program failed";
+            }
+
+            var block = GetBlock(softwarePath, blockPath);
+
+            return block is null ? null : CompileService(block);
+        }
+
+        private static CompilerResult? CompileService(IEngineeringServiceProvider provider)
+        {
+            try
+            {
+                return provider.GetService<ICompilable>()?.Compile();
+            }
+            catch (Exception)
+            {
+                return null; // "Error, compiling failed";
+            }
+        }
+
+        private static bool TryLoginSafetyOffline(SoftwareContainer? softwareContainer, string password)
+        {
+            if (string.IsNullOrEmpty(password))
+            {
+                return true;
+            }
+
+            var admin = (softwareContainer?.Parent as DeviceItem)?.GetService<SafetyAdministration>();
+            if (admin == null || admin.IsLoggedOnToSafetyOfflineProgram)
+            {
+                return true;
+            }
+
+            try
+            {
+                SecureString secString = new NetworkCredential("", password).SecurePassword;
+                admin.LoginToSafetyOfflineProgram(secString);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         #endregion

@@ -377,7 +377,7 @@ namespace TiaMcpServer.ModelContextProtocol
 
     #endregion
     
-    public class ResponseCompileSoftware : ResponseMessage
+    public class ResponseCompile : ResponseMessage
     {
         /// <summary>Success, Information, Warning or Error, from CompilerResultState.</summary>
         public string? State { get; set; }

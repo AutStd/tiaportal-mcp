@@ -67,7 +67,7 @@ namespace TiaMcpServer.Test
             bool success = Common.OpenProject(_portal, projectPath);
 
             // Pass an empty string instead of null to satisfy the non-nullable reference type requirement.  
-            var result = _portal.CompileSoftware(softwarePath, password);
+            var result = _portal.CompilePlcSoftware(softwarePath, password);
             if (result != null)
             {
                 state = result.State.ToString();
@@ -86,7 +86,29 @@ namespace TiaMcpServer.Test
             Assert.IsFalse(state.Equals("Error"), "Compile PlcSoftware failed");
         }
 
-        
+        [TestMethod]
+        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, "0_OBs/Main_1", "")]
+        public void Test_401_CompileCodeBlock(string projectPath, string softwarePath, string blockPath, string password)
+        {
+            if (_portal == null)
+            {
+                Assert.Fail("TiaPortal instance is not initialized");
+            }
+
+            bool success = Common.OpenProject(_portal, projectPath);
+
+            var result = _portal.CompileCodeBlock(softwarePath, blockPath, password);
+            var state = result?.State.ToString() ?? "Error";
+
+            success &= Common.CloseProject(_portal, projectPath);
+
+            Console.WriteLine($"CompileCodeBlock: result={state}");
+
+            Assert.IsNotNull(result, "Compile code block failed");
+            Assert.IsFalse(state.Equals("Error"), "Compile code block reported errors");
+        }
+
+
 
         #endregion
 
