@@ -1,0 +1,20 @@
+﻿using System.Collections.Generic;
+
+namespace TiaMcpServer.ModelContextProtocol
+{
+    public class ResponseGeneratedSources : ResponseMessage
+    {
+        public string? Directory { get; set; }
+
+        /// <summary>Files written per area: blocks, types.</summary>
+        public IDictionary<string, int>? Written { get; set; }
+
+        public IEnumerable<ResponseGeneratedSourceItem>? Items { get; set; }
+
+        /// <summary>Objects deliberately left out, with the reason.</summary>
+        public IEnumerable<string>? Skipped { get; set; }
+
+        /// <summary>Objects that failed to generate, with the reason.</summary>
+        public IEnumerable<string>? Failures { get; set; }
+    }
+}
