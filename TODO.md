@@ -61,7 +61,7 @@ the gap is explicit rather than implied.
 - [ ] __HMI__: screens, HMI tags, text lists, cycles, connections. Today `HmiTarget` and
   `HmiSoftware` are only printed by name in the project tree.
 - [ ] __Project infrastructure__: language settings, project-wide settings, CAx import/export,
-  compare (offline/online and project), multiuser server projects and check-in/check-out (listing marked objects with `GetMarkedObjects` is done; marking, unmarking and check-in are still open).
+  compare (offline/online and project), multiuser server projects and check-in/check-out (listing marked objects with `GetMarkedObjects` is done; committing with `CommitChanges` and `CheckIsUpToDate` is done; marking and unmarking are still open).
 - [ ] __Watch and force table entries__: blocked on reading the required attribute names from
   `GetCreationInfos()` against a live project; see the 0.2.0 "Known gaps" entry in `CHANGELOG.md`.
 

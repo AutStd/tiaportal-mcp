@@ -362,6 +362,19 @@ namespace TiaMcpServer.ModelContextProtocol
         public IEnumerable<ResponseMarkedObjectInfo>? Items { get; set; }
     }
 
+    public class ResponseCheckIsUpToDate : ResponseMessage
+    {
+        public bool IsUpToDate { get; set; }
+    }
+
+    public class ResponseCommitChanges : ResponseMessage
+    {
+        /// <summary>The revision number the commit created on the server.</summary>
+        public int Revision { get; set; }
+
+        public string? Comment { get; set; }
+    }
+
     public class ResponseReferencedLibraryType
     {
         /// <summary>Folder of the type in the project library, empty for the root.</summary>

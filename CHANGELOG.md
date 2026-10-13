@@ -4,6 +4,13 @@
 
 ### Added
 
+- __`CheckIsUpToDate`__: reports whether the open multiuser local session is up to date with the server
+  project (`LocalSession.IsUptoDate()`), read-only. Without a local session it fails with a clear message.
+- __`CommitChanges`__: commits the changes of the open multiuser local session to the server project
+  (`LocalSession.CloseAndCommit(comment)`) and returns the new server revision. Requires `--allow-write`
+  and a non-empty `comment`. It refuses to commit when the session is not up to date. Openness closes
+  the session as part of the commit, so the project must be reopened afterwards. New error code
+  `PortalErrorCode.CommitFailed`.
 - __`GetMarkedObjects`__: lists the objects marked for check-in in an open multiuser local session
   (`LocalSession.MarkingService.GetMarkings()`), read-only. Each item reports `kind`, `name`, a `path`
   usable with the other tools (blocks, types, tag, watch and force tables, external sources) and the

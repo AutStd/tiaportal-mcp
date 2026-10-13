@@ -57,7 +57,7 @@ of the MCP server entry in your client's JSON configuration and the model no lon
 
 The server is read-only unless it is started with `--allow-write`.
 
-- Without the flag the 37 project-mutating tools are **not registered at all**, so they never
+- Without the flag the 45 project-mutating tools are **not registered at all**, so they never
   appear in `tools/list`. A model cannot call what it cannot see, and the tool list stays small.
 - With the flag they are registered and annotated `destructiveHint: true`, so a client can still
   prompt before each call.
@@ -91,12 +91,12 @@ Read-only tools (69) are always available.
 | Read source inline            | `GetXmlBlock`, `GetXmlType`, `GetSourceBlock`, `GetSourceType`, `GetDocumentsBlock`, `GetDocumentsType`                                            |
 | Cross references              | `GetCrossReferences`                                                                                                                               |
 | Libraries                     | `GetOpenLibraries`, `GetReferencedLibraries`                                                                                                       |
-| Multiuser                     | `GetMarkedObjects`                                                                                                                                 |
+| Multiuser                     | `GetMarkedObjects`, `CheckIsUpToDate`                                                                                                              |
 | Block documents (V20+)        | `ExportAsDocuments`, `ExportBlocksAsDocuments`, `ImportFromDocuments`, `ImportBlocksFromDocuments`                                                 |
 | Type documents (V21+)         | `ExportTypeAsDocuments`, `ExportTypesAsDocuments`                                                                                                  |
 | Understand and read (comfort) | `GetPlcSummary`, `ResolveObjectPath`, `WhereUsed`, `FindInCode`, `GetBlockInterface`, `PreviewImport`, `OpenTiaProject`, `ExportPlcAsDocuments`    |
 
-Write tools (44) require `--allow-write`.
+Write tools (45) require `--allow-write`.
 
 | Area                  | Tools                                                                                                                                                                                                                                         |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -108,6 +108,7 @@ Write tools (44) require `--allow-write`.
 | Watch tables          | `CreateWatchTable`, `RenameWatchTable`, `DeleteWatchTable`, `CreateWatchTableGroup`, `DeleteWatchTableGroup`, `ImportWatchTable`                                                                                                              |
 | External sources      | `CreateExternalSourceFromFile`, `DeleteExternalSource`, `CreateExternalSourceGroup`, `DeleteExternalSourceGroup`, `ImportExternalSource`, `ImportSourceBlock`, `ImportSourceType`, `ImportSourceBlocks`, `ImportSourceTypes`, `ImportSources` |
 | Type documents (V21+) | `ImportTypeFromDocuments`, `ImportTypesFromDocuments`                                                                                                                                                                                         |
+| Multiuser             | `CommitChanges` (commits the local session to the server and closes the session)                                                                                                                                                              |
 
 `GetSoftwareTree` accepts a `sections` argument - any comma separated subset of
 `blocks,types,tags,watch,sources`, default `all` - to keep the output small on a large PLC.

@@ -11,6 +11,7 @@ namespace TiaMcpServer.Siemens
         DeleteFailed,
         RenameFailed,
         NotSupported,
-        WriteDisabled
+        WriteDisabled,
+        CommitFailed
     }
 }

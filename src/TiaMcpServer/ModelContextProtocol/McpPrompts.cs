@@ -666,6 +666,28 @@ Use the GetMarkedObjects tool with these parameters:
 - filter: {filter}";
         }
 
+        [McpServerPrompt(Name = "CheckIsUpToDate"), Description("Check whether a local session is up to date with the server")]
+        public static string CheckIsUpToDate()
+        {
+            return @"Check whether the open multiuser local session is up to date with the server project.
+
+Use the CheckIsUpToDate tool (no parameters). Run it before CommitChanges.";
+        }
+
+        [McpServerPrompt(Name = "CommitChanges"), Description("Commit the changes of a local session to the server (requires the server started with '--allow-write')")]
+        public static string CommitChanges(
+            [Description("comment: the comment stored with the new server revision")] string comment)
+        {
+            return $@"Commit the changes of the open multiuser local session to the server project (requires the server started with '--allow-write').
+
+Notes:
+- Run CheckIsUpToDate first; the commit fails when the session is not up to date
+- The commit closes the local session; reopen it with OpenProject to continue
+
+Use the CommitChanges tool with these parameters:
+- comment: {comment}";
+        }
+
         #endregion
 
         #region Software Templates

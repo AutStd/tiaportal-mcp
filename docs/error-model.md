@@ -23,6 +23,7 @@ This document standardizes how errors are raised in the Siemens portal layer and
   | `RenameFailed` | A rename or update operation failed. |
   | `NotSupported` | The Openness API offers no such operation - a system group, the default tag table, a force table, a system constant, or cross references on an object that has none. Distinct from `InvalidParams`: no input would make it succeed. |
   | `WriteDisabled` | Reserved for write-policy refusals. The write tools currently throw `McpException` directly from `WritePolicy.EnsureEnabled`, because the refusal happens above the portal layer. |
+  | `CommitFailed` | Committing a multiuser local session to the server project failed (`CommitChanges`). |
 
   Existing members keep their declaration order, so the numeric values of the original four are unchanged.
 

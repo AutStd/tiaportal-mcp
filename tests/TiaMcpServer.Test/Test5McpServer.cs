@@ -225,6 +225,131 @@ namespace TiaMcpServer.Test
         }
 
         [TestMethod]
+        [DataRow(Settings.Project1ProjectPath)]
+        public void Test_514_McpServer_CheckIsUpToDate_NoSession_Throws(string projectPath)
+        {
+            McpServer.Connect();
+            McpServer.OpenProject(projectPath);
+
+            try
+            {
+                var ex = Assert.ThrowsExactly<global::ModelContextProtocol.McpException>(() => McpServer.CheckIsUpToDate());
+                StringAssert.Contains(ex.Message, "local session");
+            }
+            finally
+            {
+                McpServer.CloseProject();
+            }
+        }
+
+        [TestMethod]
+        [DataRow(Settings.Session1ProjectPath)]
+        public void Test_515_McpServer_CheckIsUpToDate(string sessionPath)
+        {
+            McpServer.Connect();
+            McpServer.OpenProject(sessionPath);
+
+            try
+            {
+                var response = McpServer.CheckIsUpToDate();
+                WriteMessage("McpServer.CheckIsUpToDate()", response);
+
+                Assert.IsNotNull(response);
+            }
+            finally
+            {
+                McpServer.CloseProject();
+            }
+        }
+
+        [TestMethod]
+        public void Test_516_McpServer_CommitChanges_WriteDisabled_Throws()
+        {
+            var previous = TiaMcpServer.ModelContextProtocol.WritePolicy.AllowWrite;
+            TiaMcpServer.ModelContextProtocol.WritePolicy.AllowWrite = false;
+
+            try
+            {
+                var ex = Assert.ThrowsExactly<global::ModelContextProtocol.McpException>(() => McpServer.CommitChanges("comment"));
+                StringAssert.Contains(ex.Message, "--allow-write");
+            }
+            finally
+            {
+                TiaMcpServer.ModelContextProtocol.WritePolicy.AllowWrite = previous;
+            }
+        }
+
+        [TestMethod]
+        [DataRow(Settings.Project1ProjectPath)]
+        public void Test_517_McpServer_CommitChanges_NoSession_Throws(string projectPath)
+        {
+            var previous = TiaMcpServer.ModelContextProtocol.WritePolicy.AllowWrite;
+            TiaMcpServer.ModelContextProtocol.WritePolicy.AllowWrite = true;
+
+            McpServer.Connect();
+            McpServer.OpenProject(projectPath);
+
+            try
+            {
+                var ex = Assert.ThrowsExactly<global::ModelContextProtocol.McpException>(() => McpServer.CommitChanges("comment"));
+                StringAssert.Contains(ex.Message, "local session");
+            }
+            finally
+            {
+                McpServer.CloseProject();
+                TiaMcpServer.ModelContextProtocol.WritePolicy.AllowWrite = previous;
+            }
+        }
+
+        [TestMethod]
+        [DataRow(Settings.Session1ProjectPath)]
+        public void Test_518_McpServer_CommitChanges_EmptyComment_Throws(string sessionPath)
+        {
+            var previous = TiaMcpServer.ModelContextProtocol.WritePolicy.AllowWrite;
+            TiaMcpServer.ModelContextProtocol.WritePolicy.AllowWrite = true;
+
+            McpServer.Connect();
+            McpServer.OpenProject(sessionPath);
+
+            try
+            {
+                var ex = Assert.ThrowsExactly<global::ModelContextProtocol.McpException>(() => McpServer.CommitChanges("  "));
+                StringAssert.Contains(ex.Message, "comment");
+            }
+            finally
+            {
+                McpServer.CloseProject();
+                TiaMcpServer.ModelContextProtocol.WritePolicy.AllowWrite = previous;
+            }
+        }
+
+        [TestMethod]
+        [Ignore("Creates a new revision on the multiuser server and closes the session: run manually against a disposable server project with Settings.Session1ProjectPath")]
+        [DataRow(Settings.Session1ProjectPath)]
+        public void Test_519_McpServer_CommitChanges(string sessionPath)
+        {
+            var previous = TiaMcpServer.ModelContextProtocol.WritePolicy.AllowWrite;
+            TiaMcpServer.ModelContextProtocol.WritePolicy.AllowWrite = true;
+
+            try
+            {
+                McpServer.Connect();
+                McpServer.OpenProject(sessionPath);
+
+                Assert.IsTrue(McpServer.CheckIsUpToDate().IsUpToDate, "session must be up to date before the commit");
+
+                var response = McpServer.CommitChanges("MCP test commit");
+                WriteMessage("McpServer.CommitChanges()", response);
+
+                Assert.IsTrue(response.Revision > 0, "commit must report the new revision");
+            }
+            finally
+            {
+                TiaMcpServer.ModelContextProtocol.WritePolicy.AllowWrite = previous;
+            }
+        }
+
+        [TestMethod]
         [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0)]
         //[DataRow(Settings.Session1ProjectPath, Settings.Session1PlcSoftwarePath)]
         public void Test_505_McpServer_GetSoftwareInfo(string projectPath, string softwarePath)
