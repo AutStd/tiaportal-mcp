@@ -4,10 +4,10 @@
     {
 
         // MultiUser Project 'TestProject1_V21'
-        public const string Session1ProjectPath = "D:\\Siemens\\Sessions\\TestProject1_V21\\TestProject1_V21.als21";
+        public const string Session1ProjectPath = "D:\\Siemens\\Sessions\\TestProject1_V21_LS_1\\TestProject1_V21_LS_1.als21";
         public const string Session1PlcSoftwarePath = "PLC_1";
-        public const string Session1ExportPath = "D:\\Temp\\TIA-Portal\\Sessions\\TestProject1_V21";
-        public const string Session1PathNew = "D:\\Siemens\\Archives\\Sessions\\SaveAs\\TestProject1_V21";
+        public const string Session1ExportPath = "D:\\Temp\\TIA-Portal\\Sessions\\TestProject1_V21_LS_1";
+        public const string Session1PathNew = "D:\\Siemens\\Archives\\Sessions\\SaveAs\\TestProject1_V21_LS_1";
 
         // Local Project 'TestProject1_V21'
         public const string Project1ProjectPath = "D:\\Siemens\\Projects\\TestProject1_V21\\TestProject1_V21.ap21";

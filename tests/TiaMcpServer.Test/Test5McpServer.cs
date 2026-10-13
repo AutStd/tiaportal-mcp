@@ -200,7 +200,6 @@ namespace TiaMcpServer.Test
         }
 
         [TestMethod]
-        //[Ignore("Needs a multiuser local session: define Settings.Session1ProjectPath, enable the DataRow and mark an object in the session")]
         [DataRow(Settings.Session1ProjectPath)]
         public void Test_513_McpServer_GetMarkedObjects(string sessionPath)
         {
