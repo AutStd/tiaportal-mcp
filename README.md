@@ -75,7 +75,7 @@ To enable write mode, add the argument to your client configuration, for example
 
 ## Tools
 
-Read-only tools (68) are always available.
+Read-only tools (69) are always available.
 
 | Area                          | Tools                                                                                                                                              |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -91,6 +91,7 @@ Read-only tools (68) are always available.
 | Read source inline            | `GetXmlBlock`, `GetXmlType`, `GetSourceBlock`, `GetSourceType`, `GetDocumentsBlock`, `GetDocumentsType`                                            |
 | Cross references              | `GetCrossReferences`                                                                                                                               |
 | Libraries                     | `GetOpenLibraries`, `GetReferencedLibraries`                                                                                                       |
+| Multiuser                     | `GetMarkedObjects`                                                                                                                                 |
 | Block documents (V20+)        | `ExportAsDocuments`, `ExportBlocksAsDocuments`, `ImportFromDocuments`, `ImportBlocksFromDocuments`                                                 |
 | Type documents (V21+)         | `ExportTypeAsDocuments`, `ExportTypesAsDocuments`                                                                                                  |
 | Understand and read (comfort) | `GetPlcSummary`, `ResolveObjectPath`, `WhereUsed`, `FindInCode`, `GetBlockInterface`, `PreviewImport`, `OpenTiaProject`, `ExportPlcAsDocuments`    |

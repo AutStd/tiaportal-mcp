@@ -182,6 +182,7 @@ capability is not listed here, it is not wired up yet.
 | `TiaPortal.Dispose`                                                                                                                  | `Disconnect`                                              |
 | `TiaPortal.Projects.OpenWithUpgrade(FileInfo)`                                                                                       | `OpenProject`, `OpenTiaProject`                           |
 | `TiaPortal.LocalSessions.Open(FileInfo)`                                                                                             | Opening an `.alsXX` multiuser session                     |
+| `LocalSession.MarkingService.GetMarkings()`, `Markings.AllMarkings`, `Marking.MarkedObject` / `.MarkState`, `MarkState` flags       | `GetMarkedObjects` (objects marked for check-in)          |
 | `TiaPortal.GetProcesses()` (static)                                                                                                  | `Doctor`, and attaching to a running instance             |
 | `Project.Save` / `LocalSession.Save`                                                                                                 | `SaveProject`                                             |
 | `Project.SaveAs`                                                                                                                     | `SaveAsProject`                                           |

@@ -4,6 +4,13 @@
 
 ### Added
 
+- __`GetMarkedObjects`__: lists the objects marked for check-in in an open multiuser local session
+  (`LocalSession.MarkingService.GetMarkings()`), read-only. Each item reports `kind`, `name`, a `path`
+  usable with the other tools (blocks, types, tag, watch and force tables, external sources) and the
+  mark state: `isMarkedByMe`, `isMarkedByOthers`, `isUpToDate`. The optional `filter` is `all`
+  (default), `me` or `others`. The response also carries a plain `names` list with the name of every
+  marked object. Without a local session it fails with a clear message.
+
 - __`CompileCodeBlock`__: compiles a single code block (OB, FC, FB or DB) through the block's `ICompilable`
   service and reports its compiler messages in the same structure as `CompilePlcSoftware`. Takes
   `softwarePath`, `blockPath` and an optional `password` for safety programs.

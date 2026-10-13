@@ -651,6 +651,23 @@ Use the GetReferencedLibraries tool (it takes no parameters).";
 
         #endregion
 
+        #region Multiuser Templates
+
+        [McpServerPrompt(Name = "GetMarkedObjects"), Description("List the objects marked for check-in in a local session")]
+        public static string GetMarkedObjects(
+            [Description("filter: optional, 'all' (default), 'me' or 'others'")] string filter = "all")
+        {
+            return $@"Get the objects that are marked for check-in in the open multiuser local session, with their mark state.
+
+Common parameter values:
+- filter: 'all' lists every marked object, 'me' only those marked by me, 'others' only those marked by other users
+
+Use the GetMarkedObjects tool with these parameters:
+- filter: {filter}";
+        }
+
+        #endregion
+
         #region Software Templates
 
         [McpServerPrompt(Name = "GetSoftwareInfo"), Description("Show details of one PLC software")]

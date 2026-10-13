@@ -182,6 +182,49 @@ namespace TiaMcpServer.Test
         }
 
         [TestMethod]
+        [DataRow(Settings.Project1ProjectPath)]
+        public void Test_512_McpServer_GetMarkedObjects_NoSession_Throws(string projectPath)
+        {
+            McpServer.Connect();
+            McpServer.OpenProject(projectPath);
+
+            try
+            {
+                var ex = Assert.ThrowsExactly<global::ModelContextProtocol.McpException>(() => McpServer.GetMarkedObjects());
+                StringAssert.Contains(ex.Message, "local session");
+            }
+            finally
+            {
+                McpServer.CloseProject();
+            }
+        }
+
+        [TestMethod]
+        //[Ignore("Needs a multiuser local session: define Settings.Session1ProjectPath, enable the DataRow and mark an object in the session")]
+        [DataRow(Settings.Session1ProjectPath)]
+        public void Test_513_McpServer_GetMarkedObjects(string sessionPath)
+        {
+            McpServer.Connect();
+            McpServer.OpenProject(sessionPath);
+
+            var response = McpServer.GetMarkedObjects();
+            WriteMessage("McpServer.GetMarkedObjects()", response);
+
+            var items = response?.Items?.ToList();
+            items?.ForEach(item => Console.WriteLine($"- {item.Kind}: '{item.Name}' {item.Path} (me={item.IsMarkedByMe}, others={item.IsMarkedByOthers}, upToDate={item.IsUpToDate})"));
+
+            var markedByMe = McpServer.GetMarkedObjects("me").Items?.ToList();
+            var markedByOthers = McpServer.GetMarkedObjects("others").Items?.ToList();
+
+            McpServer.CloseProject();
+
+            Assert.IsNotNull(items, "McpServer returned no items");
+            CollectionAssert.AreEqual(items.Select(item => item.Name ?? "").ToList(), response!.Names!.ToList(), "Names must match the item names");
+            Assert.IsTrue(markedByMe!.All(item => item.IsMarkedByMe), "filter 'me' returned an object not marked by me");
+            Assert.IsTrue(markedByOthers!.All(item => item.IsMarkedByOthers), "filter 'others' returned an object not marked by others");
+        }
+
+        [TestMethod]
         [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0)]
         //[DataRow(Settings.Session1ProjectPath, Settings.Session1PlcSoftwarePath)]
         public void Test_505_McpServer_GetSoftwareInfo(string projectPath, string softwarePath)
