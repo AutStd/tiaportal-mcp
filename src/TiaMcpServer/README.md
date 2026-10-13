@@ -31,7 +31,7 @@ carries the whole surface.
         *   `McpServer.Sources.cs`: the source file tools. The inline readers `GetXml*`, `GetSource*` and `GetDocuments*` (block and type), `ExportPlcAsDocuments`, the external source tools incl. `ImportExternalSource`, and `ExportSourceBlock` / `ExportSourceType` / `ExportSourceBlocks` / `ExportSourceTypes` / `ExportSources`, which write files but never touch the project, so they are not `[WriteTool]`. `ImportSourceBlock` / `ImportSourceType` / `ImportSourceBlocks` / `ImportSourceTypes` / `ImportSources` are their import counterparts, one to one.
         *   `Software/` (`McpServer.Software.*.cs`): software info and compile, the software tree, `ResolveObjectPath`, `FindInCode`, `GetPlcSummary`, and cross references (`GetCrossReferences`, `WhereUsed`).
     *   `WritePolicy.cs`: the `--allow-write` gate.
-    *   `McpPrompts.cs`: This file contains the prompts that are used to guide the LLM.
+    *   `Prompts/McpPrompts*.cs`: These partial class files contain the prompts that are used to guide the LLM.
     *   `Responses.cs` / `Responses.Write.cs`: the response objects returned by the tools. The write side shares `ResponseCreated`, `ResponseDeleted`, `ResponseRenamed`, `ResponseImported` and `ResponseGenerateBlocks` across all 37 tools rather than minting one DTO per operation.
     *   `Types.cs`: This file defines the data types that are used by the MCP server.
     *   `Helper.cs`: `GetAttributeList(IEngineeringObject)` reflects over any Openness object's attributes, so each new `Get*Info` tool is a few typed fields plus that call.
