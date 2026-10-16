@@ -66,6 +66,12 @@
 
 ### Fixed
 
+- __`ImportXmlBlock` / `ImportXmlType` hid TIA Portal's reason__: both caught every exception and returned
+  `false`, so the tool only said "Failed importing". The error now carries the messages of the whole inner
+  exception chain, for example "The elements must be sorted according to the current flow" with the UId of
+  the part, and for that message a hint to put each new `<Part>` directly after the part that feeds it. A
+  missing file, group or open project is reported as such instead of as a failed import. Reported on GitHub
+  as #37, with fixes in p-7347/tiaportal-mcp@51d2ed9 and @178e631.
 - __Four import tools ignored read-only mode__: `ImportXmlBlock`, `ImportXmlType`, `ImportFromDocuments` and
   `ImportBlocksFromDocuments` change the project (the XML imports replace an existing object) but were neither
   marked `[WriteTool]` nor checked `WritePolicy.EnsureEnabled`, so they were listed and ran without

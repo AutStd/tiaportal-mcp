@@ -189,47 +189,45 @@ namespace TiaMcpServer.Siemens
         {
             _logger?.LogInformation($"Importing type from path: {importPath}");
 
-            var success = false;
-
-            if (IsProjectNull())
-            {
-                return success;
-            }
-
-            var softwareContainer = GetSoftwareContainer(softwarePath);
-            if (softwareContainer?.Software is PlcSoftware plcSoftware)
-            {
-                var typeGroup = plcSoftware?.TypeGroup;
-
-                if (typeGroup != null)
+            return Operation.Run(_logger, nameof(ImportXmlType), PortalErrorCode.ImportFailed,
+                () =>
                 {
-                    var group = GetPlcTypeGroupByPath(softwarePath, groupPath);
-                    if (group == null)
+                    if (IsProjectNull())
                     {
-                        return false;
+                        throw new PortalException(PortalErrorCode.InvalidState,
+                            "No project is open. Open one with 'OpenProject' first.");
+                    }
+
+                    var group = GetPlcTypeGroupByPath(softwarePath, groupPath)
+                        ?? throw new PortalException(PortalErrorCode.NotFound,
+                            $"PLC data type group not found at '{groupPath}'.");
+
+                    if (!File.Exists(importPath))
+                    {
+                        throw new PortalException(PortalErrorCode.InvalidParams,
+                            $"Import file '{importPath}' does not exist on the machine running this server.");
                     }
 
                     try
                     {
-                        // Correct the argument type by using FileInfo instead of FileStream  
-                        var fileInfo = new FileInfo(importPath);
-                        if (fileInfo.Exists)
-                        {
-                            var list = group.Types.Import(fileInfo, ImportOptions.Override);
-                            if (list != null && list.Count > 0)
-                            {
-                                return true;
-                            }
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        return false;
-                    }
-                }
-            }
+                        var imported = group.Types.Import(new FileInfo(importPath), ImportOptions.Override);
 
-            return success;
+                        if (imported == null || imported.Count == 0)
+                        {
+                            throw new PortalException(PortalErrorCode.ImportFailed,
+                                $"TIA Portal imported no PLC data type from '{importPath}'.");
+                        }
+
+                        return true;
+                    }
+                    catch (Exception ex) when (!(ex is PortalException))
+                    {
+                        // Keep TIA Portal's own reason: it usually names the exact problem.
+                        throw new PortalException(PortalErrorCode.ImportFailed,
+                            $"Import of PLC data type file '{importPath}' failed: {ImportErrors.Describe(ex)}", null, ex);
+                    }
+                },
+                ("softwarePath", softwarePath), ("groupPath", groupPath), ("importPath", importPath));
         }
 
         public IEnumerable<PlcType>? ExportXmlTypes(string softwarePath, string exportPath, string regexName = "", bool preservePath = false)

@@ -194,6 +194,11 @@ namespace TiaMcpServer.ModelContextProtocol
                     throw new McpException($"Failed importing type from '{importPath}' to '{groupPath}'");
                 }
             }
+            catch (PortalException pex)
+            {
+                // The message already carries TIA Portal's reason for the failure.
+                throw new McpException(pex.Message, pex);
+            }
             catch (Exception ex) when (ex is not McpException)
             {
                 throw new McpException($"Unexpected error importing type from '{importPath}' to '{groupPath}': {ex.Message}", ex);
