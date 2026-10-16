@@ -176,11 +176,11 @@ namespace TiaMcpServer.Siemens
                         groupPath = GetPlcBlockGroupPath(parentGroup);
                     }
 
-                    exportPath = Path.Combine(exportPath, groupPath.Replace('/', '\\'), $"{block.Name}.xml");
+                    exportPath = Path.Combine(exportPath, groupPath.Replace('/', '\\'), $"{FileNames.Safe(block.Name)}.xml");
                 }
                 else
                 {
-                    exportPath = Path.Combine(exportPath, $"{block.Name}.xml");
+                    exportPath = Path.Combine(exportPath, $"{FileNames.Safe(block.Name)}.xml");
                 }
 
                 // TIA Portal never exports inconsistent blocks
@@ -272,6 +272,7 @@ namespace TiaMcpServer.Siemens
 
             var exportList = new List<PlcBlock>();
             var failures = new List<string>();
+            var usedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             PlcBlock[] list;
 
@@ -291,26 +292,36 @@ namespace TiaMcpServer.Siemens
 
                 _logger?.LogDebug($"- Exporting block {k}/{list.Count()} : {block.Name}");
 
-                string path;
-                if (preservePath)
-                {
-                    var groupPath = "";
-                    if (block.Parent is PlcBlockGroup parentGroup)
-                    {
-                        groupPath = GetPlcBlockGroupPath(parentGroup);
-                    }
-                    path = Path.Combine(exportPath, groupPath.Replace('/', '\\'), $"{block.Name}.xml");
-                }
-                else
-                {
-                    path = Path.Combine(exportPath, $"{block.Name}.xml");
-                }
-
                 try
                 {
                     if (!block.IsConsistent)
                     {
                         _logger?.LogWarning("Skipping inconsistent block {Name}", block.Name);
+
+                        continue;
+                    }
+
+                    // Inside the try, so a name or group that cannot be a path fails this block only.
+                    string path;
+                    if (preservePath)
+                    {
+                        var groupPath = "";
+                        if (block.Parent is PlcBlockGroup parentGroup)
+                        {
+                            groupPath = GetPlcBlockGroupPath(parentGroup);
+                        }
+                        path = Path.Combine(exportPath, groupPath.Replace('/', '\\'), $"{FileNames.Safe(block.Name)}.xml");
+                    }
+                    else
+                    {
+                        path = Path.Combine(exportPath, $"{FileNames.Safe(block.Name)}.xml");
+                    }
+
+                    // Different names can map to one file name ('A/B' and 'A_B'); never overwrite.
+                    if (!usedPaths.Add(path))
+                    {
+                        failures.Add($"{block.Name}: file name '{Path.GetFileName(path)}' is already used by another block in this export");
+                        _logger?.LogWarning("Skipping block {Name}: {File} is already used in this export", block.Name, path);
 
                         continue;
                     }
@@ -760,7 +771,7 @@ namespace TiaMcpServer.Siemens
 
             try
             {
-                var file = new FileInfo(Path.Combine(directory, name + ".xml"));
+                var file = new FileInfo(Path.Combine(directory, FileNames.Safe(name) + ".xml"));
 
                 source.Export(file, ExportOptions.None);
                 targetGroup.Blocks.Import(file, overwrite ? ImportOptions.Override : ImportOptions.None);

@@ -154,11 +154,11 @@ namespace TiaMcpServer.Siemens
                         groupPath = GetPlcTypeGroupPath(parentGroup);
                     }
 
-                    exportPath = Path.Combine(exportPath, groupPath.Replace('/', '\\'), $"{type.Name}.xml");
+                    exportPath = Path.Combine(exportPath, groupPath.Replace('/', '\\'), $"{FileNames.Safe(type.Name)}.xml");
                 }
                 else
                 {
-                    exportPath = Path.Combine(exportPath, $"{type.Name}.xml");
+                    exportPath = Path.Combine(exportPath, $"{FileNames.Safe(type.Name)}.xml");
                 }
 
                 Directory.CreateDirectory(Path.GetDirectoryName(exportPath)!);
@@ -243,6 +243,7 @@ namespace TiaMcpServer.Siemens
 
             var exportList = new List<PlcType>();
             var failures = new List<string>();
+            var usedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             PlcType[] list;
 
@@ -262,26 +263,35 @@ namespace TiaMcpServer.Siemens
 
                 _logger?.LogDebug("- Exporting type {Index}/{Total} : {Name}", i, list.Count(), type.Name);
 
-                string path;
-                if (preservePath)
-                {
-                    var groupPath = "";
-                    if (type.Parent is PlcTypeGroup parentGroup)
-                    {
-                        groupPath = GetPlcTypeGroupPath(parentGroup);
-                    }
-                    path = Path.Combine(exportPath, groupPath.Replace('/', '\\'), $"{type.Name}.xml");
-                }
-                else
-                {
-                    path = Path.Combine(exportPath, $"{type.Name}.xml");
-                }
-
                 try
                 {
                     if (!type.IsConsistent)
                     {
                         _logger?.LogWarning("Skipping inconsistent type {Name}", type.Name);
+                        continue;
+                    }
+
+                    // Inside the try, so a name or group that cannot be a path fails this type only.
+                    string path;
+                    if (preservePath)
+                    {
+                        var groupPath = "";
+                        if (type.Parent is PlcTypeGroup parentGroup)
+                        {
+                            groupPath = GetPlcTypeGroupPath(parentGroup);
+                        }
+                        path = Path.Combine(exportPath, groupPath.Replace('/', '\\'), $"{FileNames.Safe(type.Name)}.xml");
+                    }
+                    else
+                    {
+                        path = Path.Combine(exportPath, $"{FileNames.Safe(type.Name)}.xml");
+                    }
+
+                    // Different names can map to one file name ('A/B' and 'A_B'); never overwrite.
+                    if (!usedPaths.Add(path))
+                    {
+                        failures.Add($"{type.Name}: file name '{Path.GetFileName(path)}' is already used by another type in this export");
+                        _logger?.LogWarning("Skipping type {Name}: {File} is already used in this export", type.Name, path);
                         continue;
                     }
 
@@ -492,7 +502,7 @@ namespace TiaMcpServer.Siemens
 
             try
             {
-                var file = new FileInfo(Path.Combine(directory, name + ".xml"));
+                var file = new FileInfo(Path.Combine(directory, FileNames.Safe(name) + ".xml"));
 
                 source.Export(file, ExportOptions.None);
                 targetGroup.Types.Import(file, overwrite ? ImportOptions.Override : ImportOptions.None);

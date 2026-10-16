@@ -813,7 +813,7 @@ namespace TiaMcpServer.Siemens
         {
             Directory.CreateDirectory(directory);
 
-            var file = Path.Combine(directory, name + extension);
+            var file = Path.Combine(directory, FileNames.Safe(name) + extension);
 
             if (File.Exists(file))
             {

@@ -66,6 +66,14 @@
 
 ### Fixed
 
+- __Block and type names with characters that are invalid in a file name__: TIA Portal allows names such as
+  `T_Data->HMI` or `GTS_EQ_I/FLower`, but the exports used the name as the file name. On .NET Framework a `>`,
+  `<`, `|` or `"` made `Path.Combine` throw, and in `ExportXmlBlocks` / `ExportXmlTypes` that happened before the
+  per-object error handling, so one such object aborted the whole batch. A `/` silently wrote the file into an
+  extra subfolder. The XML, document and generated-source exports, including the scratch exports behind the
+  `GetXml*` and source readers, now replace invalid characters with `_` (`T_Data-_HMI.xml`). Valid names keep
+  their file name. Two objects that would share one file name are no longer written over each other: the
+  second is reported as a failure of the export. Reported on GitHub, with a fix in p-7347/tiaportal-mcp@240aaa4.
 - __`ImportXmlBlock` / `ImportXmlType` hid TIA Portal's reason__: both caught every exception and returned
   `false`, so the tool only said "Failed importing". The error now carries the messages of the whole inner
   exception chain, for example "The elements must be sorted according to the current flow" with the UId of

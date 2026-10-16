@@ -354,7 +354,7 @@ namespace TiaMcpServer.Siemens
         {
             try
             {
-                return type.ExportAsDocuments(new DirectoryInfo(directory), type.Name);
+                return type.ExportAsDocuments(new DirectoryInfo(directory), FileNames.Safe(type.Name));
             }
             catch (EngineeringNotSupportedException ex)
             {
@@ -633,18 +633,20 @@ namespace TiaMcpServer.Siemens
                         try
                         {
                             // delete files s7dcl/s7res if already exists
-                            var blockFiles7dclPath = Path.Combine(exportPath, $"{blockName}.s7dcl");
+                            // The block is found by its real name; only the files get a file-safe name.
+                            var fileBaseName = FileNames.Safe(blockName);
+                            var blockFiles7dclPath = Path.Combine(exportPath, $"{fileBaseName}.s7dcl");
                             if (File.Exists(blockFiles7dclPath))
                             {
                                 File.Delete(blockFiles7dclPath);
                             }
-                            var blockFiles7resPath = Path.Combine(exportPath, $"{blockName}.s7res");
+                            var blockFiles7resPath = Path.Combine(exportPath, $"{fileBaseName}.s7res");
                             if (File.Exists(blockFiles7resPath))
                             {
                                 File.Delete(blockFiles7resPath);
                             }
 
-                            var result = group?.Blocks.Find(blockName)?.ExportAsDocuments(new DirectoryInfo(exportPath), blockName);
+                            var result = group?.Blocks.Find(blockName)?.ExportAsDocuments(new DirectoryInfo(exportPath), fileBaseName);
 
                             if (result != null && result.State == DocumentResultState.Success)
                             {
@@ -701,6 +703,7 @@ namespace TiaMcpServer.Siemens
 
             var exportList = new List<PlcBlock>();
             var failures = new List<string>();
+            var usedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             PlcBlock[] list;
             try
@@ -751,8 +754,17 @@ namespace TiaMcpServer.Siemens
                     continue;
                 }
 
-                var fileDcl = Path.Combine(targetDir, $"{block.Name}.s7dcl");
-                var fileRes = Path.Combine(targetDir, $"{block.Name}.s7res");
+                var fileBaseName = FileNames.Safe(block.Name);
+                var fileDcl = Path.Combine(targetDir, $"{fileBaseName}.s7dcl");
+                var fileRes = Path.Combine(targetDir, $"{fileBaseName}.s7res");
+
+                // Different names can map to one file name ('A/B' and 'A_B'); never overwrite.
+                if (!usedFiles.Add(fileDcl))
+                {
+                    failures.Add($"{block.Name}: file name '{fileBaseName}' is already used by another block in this export");
+                    _logger?.LogWarning($"Skipping block {block.Name}: {fileDcl} is already used in this export");
+                    continue;
+                }
 
                 // Clean previous artifacts
                 foreach (var f in new[] { fileDcl, fileRes })
@@ -777,7 +789,7 @@ namespace TiaMcpServer.Siemens
                     DocumentExportResult? result = null;
                     try
                     {
-                        result = block.ExportAsDocuments(new DirectoryInfo(targetDir), block.Name);
+                        result = block.ExportAsDocuments(new DirectoryInfo(targetDir), fileBaseName);
                     }
                     catch (EngineeringNotSupportedException ex)
                     {
