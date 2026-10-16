@@ -323,7 +323,7 @@ namespace TiaMcpServer.Test
         }
 
         [TestMethod]
-        [Ignore("Creates a new revision on the multiuser server and closes the session: run manually against a disposable server project with Settings.Session1ProjectPath")]
+        [Ignore("Ignored test: Creates a new revision on the multiuser server and closes the session: run manually against a disposable server project with Settings.Session1ProjectPath")]
         [DataRow(Settings.Session1ProjectPath)]
         public void Test_519_McpServer_CommitChanges(string sessionPath)
         {

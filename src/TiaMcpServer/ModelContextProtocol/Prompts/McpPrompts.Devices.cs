@@ -84,11 +84,11 @@ Use the GetMarkedObjects tool with these parameters:
 Use the CheckIsUpToDate tool (no parameters). Run it before CommitChanges.";
         }
 
-        [McpServerPrompt(Name = "CommitChanges"), Description("Commit the changes of a local session to the server (requires the server started with '--allow-write')")]
+        [McpServerPrompt(Name = "CommitChanges"), Description("Commit the changes of a local session to the server (requires '--allow-write')")]
         public static string CommitChanges(
             [Description("comment: the comment stored with the new server revision")] string comment)
         {
-            return $@"Commit the changes of the open multiuser local session to the server project (requires the server started with '--allow-write').
+            return $@"Commit the changes of the open multiuser local session to the server project (requires '--allow-write').
 
 Notes:
 - Run CheckIsUpToDate first; the commit fails when the session is not up to date
