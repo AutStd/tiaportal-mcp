@@ -57,7 +57,7 @@ of the MCP server entry in your client's JSON configuration and the model no lon
 
 The server is read-only unless it is started with `--allow-write`.
 
-- Without the flag the 45 project-mutating tools are **not registered at all**, so they never
+- Without the flag the 49 project-mutating tools are **not registered at all**, so they never
   appear in `tools/list`. A model cannot call what it cannot see, and the tool list stays small.
 - With the flag they are registered and annotated `destructiveHint: true`, so a client can still
   prompt before each call.
@@ -75,7 +75,7 @@ To enable write mode, add the argument to your client configuration, for example
 
 ## Tools
 
-Read-only tools (69) are always available.
+Read-only tools (65) are always available.
 
 | Area                          | Tools                                                                                                                                              |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -83,8 +83,8 @@ Read-only tools (69) are always available.
 | Project and session           | `GetProject`, `OpenProject`, `SaveProject`, `SaveAsProject`, `CloseProject`                                                                        |
 | Devices                       | `GetProjectTree`, `GetDevices`, `GetDeviceInfo`, `GetDeviceItemInfo`                                                                               |
 | PLC software                  | `GetSoftwareInfo`, `GetSoftwareTree`, `CompilePlcSoftware`, `CompileCodeBlock`                                                                     |
-| Blocks                        | `GetBlocks`, `GetBlockInfo`, `GetBlocksWithHierarchy`, `ExportXmlBlock`, `ExportXmlBlocks`, `ImportXmlBlock`                                       |
-| Types                         | `GetTypes`, `GetTypeInfo`, `ExportXmlType`, `ExportXmlTypes`, `ImportXmlType`                                                                      |
+| Blocks                        | `GetBlocks`, `GetBlockInfo`, `GetBlocksWithHierarchy`, `ExportXmlBlock`, `ExportXmlBlocks`                                       |
+| Types                         | `GetTypes`, `GetTypeInfo`, `ExportXmlType`, `ExportXmlTypes`                                                                      |
 | Tags and constants            | `GetTagTables`, `GetTagTableInfo`, `GetTags`, `GetTagInfo`, `GetConstants`, `ExportXmlTagTable`                                                    |
 | Watch and force tables        | `GetWatchTables`, `GetWatchTableInfo`, `GetForceTables`, `ExportXmlWatchTable`                                                                     |
 | External sources              | `GetExternalSources`, `GetExternalSourceInfo`, `ExportSourceBlock`, `ExportSourceBlocks`, `ExportSourceType`, `ExportSourceTypes`, `ExportSources` |
@@ -92,11 +92,11 @@ Read-only tools (69) are always available.
 | Cross references              | `GetCrossReferences`                                                                                                                               |
 | Libraries                     | `GetOpenLibraries`, `GetReferencedLibraries`                                                                                                       |
 | Multiuser                     | `GetMarkedObjects`, `CheckIsUpToDate`                                                                                                              |
-| Block documents (V20+)        | `ExportAsDocuments`, `ExportBlocksAsDocuments`, `ImportFromDocuments`, `ImportBlocksFromDocuments`                                                 |
+| Block documents (V20+)        | `ExportAsDocuments`, `ExportBlocksAsDocuments`                                                 |
 | Type documents (V21+)         | `ExportTypeAsDocuments`, `ExportTypesAsDocuments`                                                                                                  |
 | Understand and read (comfort) | `GetPlcSummary`, `ResolveObjectPath`, `WhereUsed`, `FindInCode`, `GetBlockInterface`, `PreviewImport`, `OpenTiaProject`, `ExportPlcAsDocuments`    |
 
-Write tools (45) require `--allow-write`.
+Write tools (49) require `--allow-write`.
 
 | Area                  | Tools                                                                                                                                                                                                                                         |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -108,6 +108,7 @@ Write tools (45) require `--allow-write`.
 | Watch tables          | `CreateWatchTable`, `RenameWatchTable`, `DeleteWatchTable`, `CreateWatchTableGroup`, `DeleteWatchTableGroup`, `ImportWatchTable`                                                                                                              |
 | External sources      | `CreateExternalSourceFromFile`, `DeleteExternalSource`, `CreateExternalSourceGroup`, `DeleteExternalSourceGroup`, `ImportExternalSource`, `ImportSourceBlock`, `ImportSourceType`, `ImportSourceBlocks`, `ImportSourceTypes`, `ImportSources` |
 | Type documents (V21+) | `ImportTypeFromDocuments`, `ImportTypesFromDocuments`                                                                                                                                                                                         |
+| XML and documents     | `ImportXmlBlock`, `ImportXmlType`, `ImportFromDocuments` (V20+), `ImportBlocksFromDocuments` (V20+) |
 | Multiuser             | `CommitChanges` (commits the local session to the server and closes the session)                                                                                                                                                              |
 
 `GetSoftwareTree` accepts a `sections` argument - any comma separated subset of

@@ -446,7 +446,8 @@ namespace TiaMcpServer.ModelContextProtocol
             }
         }
 
-        [McpServerTool(Name = "ImportFromDocuments", Title = "Import from documents", Destructive = true, Idempotent = true, OpenWorld = false), Description("Import from documents (.s7dcl/.s7res)")]
+        [WriteTool]
+        [McpServerTool(Name = "ImportFromDocuments",Title = "Import from documents", Destructive = true, Idempotent = true, OpenWorld = false), Description("Import from documents (.s7dcl/.s7res)")]
         public static ResponseImportFromDocuments ImportFromDocuments(
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
             [Description("groupPath: optional path within the PLC program where the block should be placed (empty for root)")] string groupPath,
@@ -454,6 +455,8 @@ namespace TiaMcpServer.ModelContextProtocol
             [Description("fileNameWithoutExtension: name of the block file without extension") ] string fileNameWithoutExtension,
             [Description("importOption: ImportDocumentOptions value (None, Override, SkipInactiveCultures, ActivateInactiveCultures)")] string importOption = "Override")
         {
+            WritePolicy.EnsureEnabled(nameof(ImportFromDocuments));
+
             try
             {
                 if (Engineering.TiaMajorVersion < 20)
@@ -508,7 +511,8 @@ namespace TiaMcpServer.ModelContextProtocol
             }
         }
 
-        [McpServerTool(Name = "ImportBlocksFromDocuments", Title = "Import blocks from documents", Destructive = true, Idempotent = true, OpenWorld = false), Description("Import blocks from documents (.s7dcl/.s7res)")]
+        [WriteTool]
+        [McpServerTool(Name = "ImportBlocksFromDocuments",Title = "Import blocks from documents", Destructive = true, Idempotent = true, OpenWorld = false), Description("Import blocks from documents (.s7dcl/.s7res)")]
         public static async Task<ResponseImportBlocksFromDocuments> ImportBlocksFromDocuments(
             IProgress<ProgressNotificationValue> progress,
             [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
@@ -517,6 +521,8 @@ namespace TiaMcpServer.ModelContextProtocol
             [Description("regexName: name or regular expression to select block files (empty for all)")] string regexName = "",
             [Description("importOption: ImportDocumentOptions value (None, Override, SkipInactiveCultures, ActivateInactiveCultures)")] string importOption = "Override")
         {
+            WritePolicy.EnsureEnabled(nameof(ImportBlocksFromDocuments));
+
             var startTime = DateTime.Now;
 
             try

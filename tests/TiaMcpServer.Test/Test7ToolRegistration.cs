@@ -411,6 +411,57 @@ namespace TiaMcpServer.Test
             Assert.IsFalse(prompts.Any(p => p.Name == oldName), $"Prompt '{oldName}' was replaced by one prompt per kind");
         }
 
+        [TestMethod]
+        [DataRow("ImportXmlBlock")]
+        [DataRow("ImportXmlType")]
+        [DataRow("ImportFromDocuments")]
+        [DataRow("ImportBlocksFromDocuments")]
+        public void Test_718_ImportTools_AreWriteToolsAndOnlyRegisteredWithAllowWrite(string name)
+        {
+            // Arrange
+            var tool = ToolMethods().SingleOrDefault(t => t.Name == name);
+
+            // Act
+            var withoutWrite = Program.BuildTools(allowWrite: false).Select(t => t.ProtocolTool.Name).ToList();
+            var withWrite = Program.BuildTools(allowWrite: true).Select(t => t.ProtocolTool.Name).ToList();
+
+            // Assert
+            Assert.IsNotNull(tool.Method, $"'{name}' is not a registered tool");
+            Assert.IsNotNull(tool.Method!.GetCustomAttribute<WriteToolAttribute>(), $"'{name}' modifies the project and must carry [WriteTool]");
+            Assert.IsFalse(withoutWrite.Contains(name), $"'{name}' must not be registered without --allow-write");
+            Assert.IsTrue(withWrite.Contains(name), $"'{name}' must be registered with --allow-write");
+        }
+
+        [TestMethod]
+        public async System.Threading.Tasks.Task Test_719_ImportTools_WriteDisabled_Throw()
+        {
+            // Arrange
+            var previous = WritePolicy.AllowWrite;
+            WritePolicy.AllowWrite = false;
+
+            try
+            {
+                // Act / Assert: the guard runs before any Portal access, so no TIA Portal is needed
+                var calls = new (string Name, Func<System.Threading.Tasks.Task> Call)[]
+                {
+                    ("ImportXmlBlock", () => { McpServer.ImportXmlBlock("sw", "group", "file.xml"); return System.Threading.Tasks.Task.CompletedTask; }),
+                    ("ImportXmlType", () => { McpServer.ImportXmlType("sw", "group", "file.xml"); return System.Threading.Tasks.Task.CompletedTask; }),
+                    ("ImportFromDocuments", () => { McpServer.ImportFromDocuments("sw", "group", "dir", "name"); return System.Threading.Tasks.Task.CompletedTask; }),
+                    ("ImportBlocksFromDocuments", () => McpServer.ImportBlocksFromDocuments(null!, "sw", "group", "dir"))
+                };
+
+                foreach (var (name, call) in calls)
+                {
+                    var ex = await Assert.ThrowsExactlyAsync<global::ModelContextProtocol.McpException>(call);
+                    StringAssert.Contains(ex.Message, "--allow-write", $"'{name}' must be refused without --allow-write");
+                }
+            }
+            finally
+            {
+                WritePolicy.AllowWrite = previous;
+            }
+        }
+
         private static List<(string Name, MethodInfo Method, string? Title)> ToolMethods()
         {
             var result = new List<(string Name, MethodInfo Method, string? Title)>();

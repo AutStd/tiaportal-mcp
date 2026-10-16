@@ -66,6 +66,11 @@
 
 ### Fixed
 
+- __Four import tools ignored read-only mode__: `ImportXmlBlock`, `ImportXmlType`, `ImportFromDocuments` and
+  `ImportBlocksFromDocuments` change the project (the XML imports replace an existing object) but were neither
+  marked `[WriteTool]` nor checked `WritePolicy.EnsureEnabled`, so they were listed and ran without
+  `--allow-write`. They now behave like the other import tools: hidden from `tools/list` and refused when
+  called directly. Reported on GitHub with a fix in p-7347/tiaportal-mcp@51e759a.
 - __Devices in "Ungrouped devices" were invisible__: `GetDevices` only walked the top-level devices and the
   user groups, never the project's `UngroupedDevicesGroup` (a system group), so GSD based IO devices,
   SCALANCE switches, ET200SP/eco stations and the like were missing from every device list. The group is
