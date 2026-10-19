@@ -49,16 +49,25 @@ namespace TiaMcpServer.Siemens
 
         public DeviceItem? GetDeviceItem(string deviceItemPath)
         {
+            return GetDeviceItem(deviceItemPath, out _);
+        }
+
+        /// <summary>
+        /// Like GetDeviceItem, with reason naming the first path segment that was not found.
+        /// </summary>
+        public DeviceItem? GetDeviceItem(string deviceItemPath, out string? reason)
+        {
             _logger?.LogInformation($"Getting device item by path: {deviceItemPath}");
+
+            reason = null;
 
             if (IsProjectNull())
             {
+                reason = "no project open";
                 return null;
             }
 
-            // Retrieve the device by its path
-            return GetDeviceItemByPath(deviceItemPath);
-
+            return GetDeviceItemByPath(deviceItemPath, out reason);
         }
 
         #endregion
@@ -126,143 +135,161 @@ namespace TiaMcpServer.Siemens
             return devices.FirstOrDefault(d => d.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
         }
 
-        private DeviceItem? GetDeviceItemByPath(string deviceItemPath)
+        /// <summary>
+        /// Result of one attempt to resolve a device item path from a device.
+        /// Matched counts the path segments that were found, Error says why the rest was not.
+        /// </summary>
+        private sealed class DeviceItemLookup
         {
-            if (_project is null || _project.Devices == null || string.IsNullOrWhiteSpace(deviceItemPath))
-            {
-                return null;
-            }
-
-            // A device name can itself contain '/', so check for such a device before splitting the path
-            var deviceItem = GetDeviceItemBySlashDeviceName(deviceItemPath.Trim('/'));
-            if (deviceItem != null)
-            {
-                return deviceItem;
-            }
-
-            // Split the device path by '/' to get each device name
-            var pathSegments = deviceItemPath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-
-            deviceItem = GetDeviceItemBySegments(pathSegments);
-            if (deviceItem != null)
-            {
-                return deviceItem;
-            }
-
-            // devices below the "Ungrouped devices" system group are not part of devices or groups
-            var ungroupedDevices = _project.UngroupedDevicesGroup?.Devices;
-            if (ungroupedDevices != null)
-            {
-                for (int index = 0; index < pathSegments.Length && deviceItem is null; index++)
-                {
-                    deviceItem = GetDeviceItemFromDevice(pathSegments, ungroupedDevices, index);
-                }
-            }
-
-            return deviceItem;
+            public DeviceItem? Item { get; set; }
+            public int Matched { get; set; }
+            public string? Error { get; set; }
         }
 
         /// <summary>
-        /// Handles paths like 'S7-1500/ET200MP station_1/PLC_1' or 'Group1/S7-1500/ET200MP station_1/PLC_1'
-        /// where the device name itself contains '/': the device name is looked up as a whole
-        /// (at the start of the path or after a '/') and the rest of the path names the device item.
+        /// Resolves '<device>/<item>/<subitem>/...' as GetNetworkInfo lists it, optionally preceded by
+        /// the device groups ('Group1/Group1.1/<device>/...'). The device name can itself contain '/'.
+        /// A hardware PLC has a device name like 'S7-1500/ET200MP station_1' that the TIA Portal IDE
+        /// does not show, so the device name may also be left out ('PLC_1/...' or 'Group1/PLC_1/...').
+        /// Every segment below the device must name an existing device item, at any depth; otherwise
+        /// the result is null and reason names the first segment that was not found.
         /// </summary>
-        private DeviceItem? GetDeviceItemBySlashDeviceName(string path)
+        private DeviceItem? GetDeviceItemByPath(string deviceItemPath, out string? reason)
         {
-            foreach (var device in EnumerateAllDevices().Where(d => d.Name.IndexOf('/') >= 0))
+            reason = null;
+
+            if (_project is null || _project.Devices == null || string.IsNullOrWhiteSpace(deviceItemPath))
             {
-                var prefix = device.Name + "/";
-                var start = path.IndexOf(prefix, StringComparison.OrdinalIgnoreCase);
-                if (start < 0 || (start > 0 && path[start - 1] != '/'))
-                {
-                    continue;
-                }
-
-                var itemName = path.Substring(start + prefix.Length);
-                var deviceItem = device.DeviceItems.FirstOrDefault(di => di.Name.Equals(itemName, StringComparison.OrdinalIgnoreCase));
-                if (deviceItem != null)
-                {
-                    return deviceItem;
-                }
-            }
-
-            return null;
-        }
-
-        private DeviceItem? GetDeviceItemBySegments(string[] pathSegments)
-        {
-            if (_project is null || _project.Devices == null)
-            {
+                reason = "no project open or empty path";
                 return null;
             }
 
-            DeviceItem? deviceItem = null;
+            var pathSegments = deviceItemPath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            var attempts = new List<DeviceItemLookup>();
 
-            // initial devices and groups
-            var devices = _project.Devices;
-            var groups = _project.DeviceGroups;
-
-            for (int index = 0; index < pathSegments.Length; index++)
+            foreach (var device in EnumerateAllDevices())
             {
-                deviceItem = GetDeviceItemFromDevice(pathSegments, devices, index);
-
-                if (deviceItem is null)
+                var groupPath = GetDeviceGroupPath(device);
+                var starts = new List<int> { 0 };
+                if (groupPath.Count > 0 && StartsWithSegments(pathSegments, groupPath))
                 {
-                    // search in groups
-                    var group = groups?.FirstOrDefault(g => g.Name.Equals(pathSegments[index], StringComparison.OrdinalIgnoreCase));
-                    if (group is not null)
+                    starts.Add(groupPath.Count);
+                }
+
+                foreach (var start in starts)
+                {
+                    // path with the device name
+                    var deviceSegments = device.Name.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (MatchesSegments(pathSegments, start, deviceSegments))
                     {
-                        devices = group.Devices;
-                        if (devices != null)
+                        var itemStart = start + deviceSegments.Length;
+                        if (itemStart == pathSegments.Length)
                         {
-                            deviceItem = GetDeviceItemFromDevice(pathSegments, devices, index + 1);
+                            attempts.Add(new DeviceItemLookup { Matched = itemStart, Error = $"'{device.Name}' is a device, not a device item; use GetDeviceInfo or add the device item name" });
                         }
-
-                        if (deviceItem is not null)
+                        else
                         {
-                            return deviceItem;
+                            attempts.Add(ResolveDeviceItems(device.DeviceItems, pathSegments, itemStart, device.Name));
                         }
+                    }
 
-                        // not found, but on the path
-                        groups = group.Groups;
-                        devices = group.Devices;
+                    // path without the device name, starting at a top-level device item
+                    if (start < pathSegments.Length)
+                    {
+                        attempts.Add(ResolveDeviceItems(device.DeviceItems, pathSegments, start, device.Name));
                     }
                 }
-                else if (deviceItem is not null)
+
+                var found = attempts.FirstOrDefault(a => a.Item != null);
+                if (found != null)
                 {
-                    return deviceItem;
+                    return found.Item;
                 }
             }
 
-            return deviceItem;
+            var best = attempts.Where(a => a.Matched > 0).OrderByDescending(a => a.Matched).FirstOrDefault();
+            reason = best?.Error ?? $"no device and no top-level device item named '{pathSegments.FirstOrDefault()}'";
+            return null;
         }
 
-        private static DeviceItem? GetDeviceItemFromDevice(string[] pathSegments, DeviceComposition? devices, int index)
+        /// <summary>
+        /// Walks down the device items segment by segment. A device item name may contain '/',
+        /// so the longest joined run of segments that names a child wins.
+        /// </summary>
+        private static DeviceItemLookup ResolveDeviceItems(DeviceItemComposition items, string[] pathSegments, int index, string parentPath)
         {
-            string segment = pathSegments[index];
-            string nextSegment = index + 1 < pathSegments.Length ? pathSegments[index + 1] : string.Empty;
+            DeviceItem? current = null;
+            var children = items;
 
-            DeviceItem? deviceItem = null;
-
-            // a pc based plc has a Device.Name = 'PC-System_1' or something like that, which is visible in the TIA-Portal IDE
-            // use segment to find device
-            var device = devices.FirstOrDefault(d => d.Name.Equals(segment, StringComparison.OrdinalIgnoreCase));
-            if (device != null)
+            while (index < pathSegments.Length)
             {
-                // then use next segment to find device item
-                deviceItem = device.DeviceItems.FirstOrDefault(di => di.Name.Equals(nextSegment, StringComparison.OrdinalIgnoreCase));
+                DeviceItem? next = null;
+                int used = 0;
 
+                for (int count = pathSegments.Length - index; count > 0 && next is null; count--)
+                {
+                    var name = string.Join("/", pathSegments, index, count);
+                    next = children.FirstOrDefault(di => di.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+                    used = count;
+                }
+
+                if (next is null)
+                {
+                    var available = children.Select(di => $"'{di.Name}'").ToList();
+                    return new DeviceItemLookup
+                    {
+                        Matched = index,
+                        Error = available.Count == 0
+                            ? $"'{pathSegments[index]}' not found, '{parentPath}' has no device items"
+                            : $"'{pathSegments[index]}' not found below '{parentPath}'; available: {string.Join(", ", available)}"
+                    };
+                }
+
+                current = next;
+                parentPath = $"{parentPath}/{next.Name}";
+                index += used;
+                children = next.DeviceItems;
             }
 
-            // a hardware plc has a Device.Name = 'S7-1500/ET200MP-Station_1' or something like that, which is not visible in the TIA-Portal IDE
-            if (device == null)
+            return new DeviceItemLookup { Item = current, Matched = index };
+        }
+
+        // Names of the user groups that contain the device, outermost first; empty for top-level and ungrouped devices
+        private static List<string> GetDeviceGroupPath(Device device)
+        {
+            var names = new List<string>();
+            var parent = device.Parent;
+
+            while (parent is DeviceUserGroup group)
             {
-                deviceItem = devices
-                .SelectMany(d => d.DeviceItems)
-                .FirstOrDefault(di => di.Name.Equals(segment, StringComparison.OrdinalIgnoreCase));
+                names.Insert(0, group.Name);
+                parent = group.Parent;
             }
 
-            return deviceItem;
+            return names;
+        }
+
+        private static bool StartsWithSegments(string[] pathSegments, List<string> prefix)
+        {
+            return MatchesSegments(pathSegments, 0, prefix.ToArray());
+        }
+
+        private static bool MatchesSegments(string[] pathSegments, int start, string[] expected)
+        {
+            if (expected.Length == 0 || start + expected.Length > pathSegments.Length)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < expected.Length; i++)
+            {
+                if (!pathSegments[start + i].Equals(expected[i], StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         #endregion

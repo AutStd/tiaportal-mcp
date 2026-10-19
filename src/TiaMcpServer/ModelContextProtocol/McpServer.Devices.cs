@@ -52,11 +52,11 @@ namespace TiaMcpServer.ModelContextProtocol
 
         [McpServerTool(Name = "GetDeviceItemInfo", Title = "Get device item info", ReadOnly = true, OpenWorld = false, UseStructuredContent = true), Description("Show name, description and attributes of one device item in the current project or session")]
         public static ResponseDeviceItemInfo GetDeviceItemInfo(
-            [Description("deviceItemPath: defines the path in the project structure to the device item")] string deviceItemPath)
+            [Description("deviceItemPath: '<device>/<item>/<subitem>/...' as 'GetNetworkInfo' lists it in 'deviceItem', e.g. 'S7-1500/PLC/PN', optionally preceded by device groups; every segment must exist")] string deviceItemPath)
         {
             try
             {
-                var deviceItem = Portal.GetDeviceItem(deviceItemPath);
+                var deviceItem = Portal.GetDeviceItem(deviceItemPath, out var reason);
 
                 if (deviceItem is not null)
                 {
@@ -77,7 +77,7 @@ namespace TiaMcpServer.ModelContextProtocol
                 }
                 else
                 {
-                    throw new McpException($"Device item not found at '{deviceItemPath}'");
+                    throw new McpException($"Device item not found at '{deviceItemPath}': {reason}");
                 }
             }
             catch (Exception ex) when (ex is not McpException)
