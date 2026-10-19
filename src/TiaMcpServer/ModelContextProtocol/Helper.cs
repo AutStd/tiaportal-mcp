@@ -15,7 +15,18 @@ namespace TiaMcpServer.ModelContextProtocol
             {
                 foreach (var attr in obj.GetAttributeInfos())
                 {
-                    object value = obj.GetAttribute(attr.Name);
+                    // Some attributes throw instead of returning a value (e.g. 'WebserverDefaultHTMLPage'
+                    // when 'PermitDataAccessViaWebApi' is enabled); one of them must not fail the whole list
+                    object? value;
+                    try
+                    {
+                        value = ToSerializableValue(obj.GetAttribute(attr.Name));
+                    }
+                    catch (Exception)
+                    {
+                        value = null;
+                    }
+
                     attributes.Add(new Attribute
                     {
                         Name = attr.Name,
@@ -26,6 +37,27 @@ namespace TiaMcpServer.ModelContextProtocol
             }
 
             return attributes;
+        }
+
+        /// <summary>
+        /// Openness returns engineering objects (DeviceItemAssociation, MultilingualText, FileInfo, ...)
+        /// for some attributes; they reference each other and break the JSON serialization of the
+        /// response. Simple values are kept, everything else is passed on as text.
+        /// </summary>
+        private static object? ToSerializableValue(object? value)
+        {
+            if (value is null)
+            {
+                return null;
+            }
+
+            var type = value.GetType();
+            if (type.IsPrimitive || type.IsEnum || value is string || value is DateTime || value is decimal || value is TimeSpan)
+            {
+                return value;
+            }
+
+            return value.ToString();
         }
 
         /// <summary>
