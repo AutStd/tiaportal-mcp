@@ -4,6 +4,10 @@
 
 ### Added
 
+- __`ExportOpcUaXml`__: exports the OPC UA data of one PLC as `<exportPath>/<softwarePath>/OPC UA/<PLC name>.xml`
+  (`OpcUaExportProvider.Export`, found through `Project.HwUtilities`). Read-only with respect to the project, so
+  it is not gated behind `--allow-write`; it fails with `NotSupported` when TIA Portal does not offer the OPC UA
+  export provider. A prompt of the same name is included.
 - __`CheckIsUpToDate`__: reports whether the open multiuser local session is up to date with the server
   project (`LocalSession.IsUptoDate()`), read-only. Without a local session it fails with a clear message.
 - __`CommitChanges`__: commits the changes of the open multiuser local session to the server project
