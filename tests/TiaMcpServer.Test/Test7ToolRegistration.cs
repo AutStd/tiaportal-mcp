@@ -242,17 +242,19 @@ namespace TiaMcpServer.Test
         {
             // Arrange
             var problems = new List<string>();
+            var maxDescriptionLength = 80;
+            var maxTitleLength = 40;
 
             // Act
             foreach (var prompt in PromptMethods())
             {
                 var text = prompt.Method.GetCustomAttribute<System.ComponentModel.DescriptionAttribute>()?.Description;
-                problems.AddRange(StyleProblems("prompt description", prompt.Name, text, 80));
+                problems.AddRange(StyleProblems("prompt description", prompt.Name, text, maxDescriptionLength));
             }
 
             foreach (var tool in ToolMethods())
             {
-                problems.AddRange(StyleProblems("tool title", tool.Name, tool.Title, 40));
+                problems.AddRange(StyleProblems("tool title", tool.Name, tool.Title, maxTitleLength));
             }
 
             // Assert

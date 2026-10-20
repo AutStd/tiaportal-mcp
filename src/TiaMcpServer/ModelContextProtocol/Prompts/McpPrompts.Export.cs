@@ -80,7 +80,7 @@ Use the ExportXmlTagTable tool with these parameters:
 - preservePath: {NormalizeBool(preservePath)}";
         }
 
-        [McpServerPrompt(Name = "ExportOpcUaXml"), Description("Export the OPC UA data of one PLC as XML")]
+        [McpServerPrompt(Name = "ExportOpcUaXml"), Description("Export all PLC tags and DB variables ('Accessible from HMI/OPC UA') as XML")]
         public static string ExportOpcUaXml(string softwarePath, string exportPath)
         {
             return $@"Export the OPC UA data of a PLC to an XML file.
