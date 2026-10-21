@@ -75,7 +75,7 @@ To enable write mode, add the argument to your client configuration, for example
 
 ## Tools
 
-Read-only tools (66) are always available.
+Read-only tools (63) are always available.
 
 | Area                          | Tools                                                                                                                                              |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -90,13 +90,13 @@ Read-only tools (66) are always available.
 | External sources              | `GetExternalSources`, `GetExternalSourceInfo`, `ExportSourceBlock`, `ExportSourceBlocks`, `ExportSourceType`, `ExportSourceTypes`, `ExportSources` |
 | Read source inline            | `GetXmlBlock`, `GetXmlType`, `GetSourceBlock`, `GetSourceType`, `GetDocumentsBlock`, `GetDocumentsType`                                            |
 | Cross references              | `GetCrossReferences`                                                                                                                               |
-| Libraries                     | `GetOpenLibraries`, `GetReferencedLibraries`, `GetLibraryTypeInstances`, `ExportLibraryTypeVersion`, `EditLibraryType`, `CreateLibraryTypeVersionFromDocument`, `ReleaseLibraryType`, `DiscardLibraryType` |
+| Libraries                     | `GetOpenLibraries`, `GetReferencedLibraries`, `GetLibraryTypeInstances`, `GetLibraryTypeVersions`, `ExportLibraryTypeVersion`                       |
 | Multiuser                     | `GetMarkedObjects`, `CheckIsUpToDate`                                                                                                              |
 | Block documents (V20+)        | `ExportAsDocuments`, `ExportBlocksAsDocuments`                                                 |
 | Type documents (V21+)         | `ExportTypeAsDocuments`, `ExportTypesAsDocuments`                                                                                                  |
 | Understand and read (comfort) | `GetPlcSummary`, `ResolveObjectPath`, `WhereUsed`, `FindInCode`, `GetBlockInterface`, `PreviewImport`, `OpenTiaProject`, `ExportPlcAsDocuments`    |
 
-Write tools (49) require `--allow-write`.
+Write tools (54) require `--allow-write`.
 
 | Area                  | Tools                                                                                                                                                                                                                                         |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -109,6 +109,7 @@ Write tools (49) require `--allow-write`.
 | External sources      | `CreateExternalSourceFromFile`, `DeleteExternalSource`, `CreateExternalSourceGroup`, `DeleteExternalSourceGroup`, `ImportExternalSource`, `ImportSourceBlock`, `ImportSourceType`, `ImportSourceBlocks`, `ImportSourceTypes`, `ImportSources` |
 | Type documents (V21+) | `ImportTypeFromDocuments`, `ImportTypesFromDocuments`                                                                                                                                                                                         |
 | XML and documents     | `ImportXmlBlock`, `ImportXmlType`, `ImportFromDocuments` (V20+), `ImportBlocksFromDocuments` (V20+) |
+| Library types         | `EditLibraryType`, `CreateLibraryTypeVersionFromDocument`, `ReleaseLibraryType`, `DiscardLibraryType`, `CleanUpLibraryTypes` (keeps the default version) |
 | Multiuser             | `CommitChanges` (commits the local session to the server and closes the session)                                                                                                                                                              |
 
 `GetSoftwareTree` accepts a `sections` argument - any comma separated subset of

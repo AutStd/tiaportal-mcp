@@ -61,6 +61,39 @@ namespace TiaMcpServer.Siemens
         public List<string> Files { get; set; } = new List<string>();
     }
 
+    /// <summary>One version of a library type with what still uses it.</summary>
+    public class LibraryTypeVersionUsage : LibraryTypeVersionEntry
+    {
+        /// <summary>Blocks and PLC data types of the given PLC software connected to this version.</summary>
+        public List<string> Instances { get; set; } = new List<string>();
+
+        /// <summary>Other type versions that use this version, e.g. "ALARM_PRG_ClassX_FB 1.1.0".</summary>
+        public List<string> Dependents { get; set; } = new List<string>();
+
+        /// <summary>Master copies that contain an instance of this version.</summary>
+        public List<string> MasterCopies { get; set; } = new List<string>();
+
+        /// <summary>False for types whose instances are not counted here, e.g. HMI types.</summary>
+        public bool InstancesCounted { get; set; }
+
+        /// <summary>
+        /// No instance in the PLC software, no dependent version, no master copy, not in work;
+        /// null when the instances are not counted.
+        /// </summary>
+        public bool? IsUnused { get; set; }
+
+        /// <summary>Unused and not the default version: CleanUpLibraryTypes would remove it; null when unknown.</summary>
+        public bool? WouldBeCleanedUp { get; set; }
+    }
+
+    /// <summary>Result of a library clean-up: the versions removed and the versions left.</summary>
+    public class LibraryCleanUpResult
+    {
+        public List<string> Removed { get; set; } = new List<string>();
+
+        public List<string> Remaining { get; set; } = new List<string>();
+    }
+
     public partial class Portal
     {
         #region library types
@@ -95,6 +128,84 @@ namespace TiaMcpServer.Siemens
                     }
 
                     return result;
+                });
+        }
+
+        /// <summary>
+        /// Lists the versions of the project library types with what still uses them: instances in
+        /// the PLC software, dependent type versions and master copies. Selects one type by name, the
+        /// types below a library folder, or all types. Instances outside the given PLC software
+        /// (other PLCs, HMI) are not counted, CleanUpLibraryTypes still checks the whole project.
+        /// </summary>
+        public List<LibraryTypeVersionUsage> GetLibraryTypeVersions(string softwarePath, string? typeName, string? folderPath)
+        {
+            _logger?.LogInformation($"Getting library type versions for {softwarePath}...");
+
+            return Operation.Run(_logger, nameof(GetLibraryTypeVersions), PortalErrorCode.NotFound,
+                () =>
+                {
+                    var software = GetPlcSoftwareOrThrow(softwarePath);
+                    var instances = GetInstancePathsByVersion(software);
+                    var result = new List<LibraryTypeVersionUsage>();
+
+                    foreach (var type in SelectLibraryTypes(typeName, folderPath))
+                    {
+                        foreach (var version in type.Versions)
+                        {
+                            result.Add(ToVersionUsage(version, instances));
+                        }
+                    }
+
+                    return result;
+                });
+        }
+
+        /// <summary>
+        /// Removes the unused versions of the selected project library types with the "Clean up
+        /// library" function of TIA Portal. The default version of each type is always kept, so no
+        /// type is deleted. Selects types by name (comma separated) and/or a library folder.
+        /// </summary>
+        public LibraryCleanUpResult CleanUpLibraryTypes(string? typeNames, string? folderPath)
+        {
+            _logger?.LogInformation($"Cleaning up library types {typeNames} {folderPath}...");
+
+            return Operation.Run(_logger, nameof(CleanUpLibraryTypes), PortalErrorCode.InvalidState,
+                () =>
+                {
+                    var project = _project ?? throw new PortalException(PortalErrorCode.InvalidState, "No project is open in TIA Portal");
+
+                    var selection = new List<ILibraryTypeOrFolderSelection>();
+                    foreach (var name in (typeNames ?? "").Split(',').Select(n => n.Trim()).Where(n => n.Length > 0))
+                    {
+                        selection.Add(GetLibraryTypeOrThrow(name));
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(folderPath))
+                    {
+                        selection.Add(GetLibraryFolderOrThrow(folderPath!));
+                    }
+
+                    if (selection.Count == 0)
+                    {
+                        throw new PortalException(PortalErrorCode.InvalidParams,
+                            "Give 'typeNames' and/or 'folderPath'; the whole library is not cleaned up in one call");
+                    }
+
+                    var types = selection.OfType<LibraryType>()
+                        .Concat(selection.OfType<LibraryTypeFolder>().SelectMany(EnumerateLibraryTypes))
+                        .Distinct()
+                        .ToList();
+                    var before = types.SelectMany(t => t.Versions.Select(v => VersionLabel(t, v))).ToList();
+
+                    project.ProjectLibrary.CleanUpLibrary(selection, CleanUpMode.PreserveDefaultVersionOfUnusedTypes);
+
+                    var after = types.SelectMany(t => t.Versions.Select(v => VersionLabel(t, v))).ToList();
+
+                    return new LibraryCleanUpResult
+                    {
+                        Removed = before.Except(after).ToList(),
+                        Remaining = after
+                    };
                 });
         }
 
@@ -313,6 +424,145 @@ namespace TiaMcpServer.Siemens
             }
 
             return null;
+        }
+
+        private static IEnumerable<LibraryType> EnumerateLibraryTypes(LibraryTypeFolder folder)
+        {
+            return folder.Types.Concat(folder.Folders.SelectMany(EnumerateLibraryTypes));
+        }
+
+        /// <summary>The selected types: one by name, all below a folder, or all of the project library.</summary>
+        private IEnumerable<LibraryType> SelectLibraryTypes(string? typeName, string? folderPath)
+        {
+            if (!string.IsNullOrWhiteSpace(typeName))
+            {
+                return new[] { GetLibraryTypeOrThrow(typeName!) };
+            }
+
+            if (!string.IsNullOrWhiteSpace(folderPath))
+            {
+                return EnumerateLibraryTypes(GetLibraryFolderOrThrow(folderPath!));
+            }
+
+            var project = _project ?? throw new PortalException(PortalErrorCode.InvalidState, "No project is open in TIA Portal");
+            return EnumerateLibraryTypes(project.ProjectLibrary.TypeFolder);
+        }
+
+        /// <summary>Finds a folder of the project library by its path, e.g. "Z-LIB PLC Types/MODE (Betriebsarten)".</summary>
+        private LibraryTypeFolder GetLibraryFolderOrThrow(string folderPath)
+        {
+            var project = _project ?? throw new PortalException(PortalErrorCode.InvalidState, "No project is open in TIA Portal");
+
+            LibraryTypeFolder folder = project.ProjectLibrary.TypeFolder;
+            foreach (var name in SplitGroupPath(folderPath))
+            {
+                folder = folder.Folders.FirstOrDefault(f => string.Equals(f.Name, name, StringComparison.Ordinal))
+                    ?? throw new PortalException(PortalErrorCode.NotFound,
+                        $"Library folder '{folderPath}' not found. Use 'GetLibraryTypeInstances' to see the type folders");
+            }
+
+            return folder;
+        }
+
+        /// <summary>
+        /// Splits a folder path at '/', but not inside parentheses, because folder names such as
+        /// "ALARM (Meldungen / Alarme)" may contain a slash.
+        /// </summary>
+        private static List<string> SplitGroupPath(string path)
+        {
+            var parts = new List<string>();
+            var current = new System.Text.StringBuilder();
+            var depth = 0;
+            foreach (var c in path)
+            {
+                if (c == '(') depth++;
+                if (c == ')' && depth > 0) depth--;
+                if (c == '/' && depth == 0)
+                {
+                    parts.Add(current.ToString());
+                    current.Clear();
+                    continue;
+                }
+
+                current.Append(c);
+            }
+
+            parts.Add(current.ToString());
+            return parts.Where(p => p.Length > 0).ToList();
+        }
+
+        /// <summary>Paths of the typed blocks and PLC data types of the PLC software, by version Guid.</summary>
+        private Dictionary<Guid, List<string>> GetInstancePathsByVersion(PlcSoftware software)
+        {
+            var result = new Dictionary<Guid, List<string>>();
+
+            void Add(string path, LibraryTypeInstanceInfo? info)
+            {
+                var version = info?.LibraryTypeVersion;
+                if (version == null)
+                {
+                    return;
+                }
+
+                if (!result.TryGetValue(version.Guid, out var paths))
+                {
+                    paths = new List<string>();
+                    result[version.Guid] = paths;
+                }
+
+                paths.Add(path);
+            }
+
+            var blocks = new List<PlcBlock>();
+            GetBlocksRecursive(software.BlockGroup, blocks);
+            foreach (var block in blocks)
+            {
+                Add(GetBlockPath(block), block.GetService<LibraryTypeInstanceInfo>());
+            }
+
+            var types = new List<PlcType>();
+            GetTypesRecursive(software.TypeGroup, types);
+            foreach (var type in types)
+            {
+                Add(GetTypePath(type), type.GetService<LibraryTypeInstanceInfo>());
+            }
+
+            return result;
+        }
+
+        private static LibraryTypeVersionUsage ToVersionUsage(LibraryTypeVersion version, Dictionary<Guid, List<string>> instances)
+        {
+            var entry = ToVersionEntry(version);
+            var usage = new LibraryTypeVersionUsage
+            {
+                TypeName = entry.TypeName,
+                TypeFolderPath = entry.TypeFolderPath,
+                VersionNumber = entry.VersionNumber,
+                State = entry.State,
+                IsDefault = entry.IsDefault,
+                Author = entry.Author,
+                Comment = entry.Comment,
+                Instances = instances.TryGetValue(version.Guid, out var paths) ? paths : new List<string>(),
+                Dependents = version.Dependents.Select(d => VersionLabel(d.Parent as LibraryType, d)).ToList(),
+                MasterCopies = version.MasterCopiesContainingInstances.Select(m => m.Name).ToList()
+            };
+
+            // Only blocks and PLC data types are scanned for instances; other types (HMI, PLC
+            // documents) may have instances elsewhere, so their use stays unknown.
+            usage.InstancesCounted = version is CodeBlockLibraryTypeVersion || version is PlcTypeLibraryTypeVersion;
+            if (usage.InstancesCounted)
+            {
+                usage.IsUnused = usage.Instances.Count == 0 && usage.Dependents.Count == 0 && usage.MasterCopies.Count == 0
+                    && version.State != LibraryTypeVersionState.InWork;
+                usage.WouldBeCleanedUp = usage.IsUnused == true && !version.IsDefault;
+            }
+
+            return usage;
+        }
+
+        private static string VersionLabel(LibraryType? type, LibraryTypeVersion version)
+        {
+            return $"{type?.Name} {version.VersionNumber}";
         }
 
         private LibraryTypeVersion GetInWorkVersionOrThrow(string typeName)
