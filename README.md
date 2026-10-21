@@ -90,7 +90,7 @@ Read-only tools (65) are always available.
 | External sources              | `GetExternalSources`, `GetExternalSourceInfo`, `ExportSourceBlock`, `ExportSourceBlocks`, `ExportSourceType`, `ExportSourceTypes`, `ExportSources` |
 | Read source inline            | `GetXmlBlock`, `GetXmlType`, `GetSourceBlock`, `GetSourceType`, `GetDocumentsBlock`, `GetDocumentsType`                                            |
 | Cross references              | `GetCrossReferences`                                                                                                                               |
-| Libraries                     | `GetOpenLibraries`, `GetReferencedLibraries`                                                                                                       |
+| Libraries                     | `GetOpenLibraries`, `GetReferencedLibraries`, `GetLibraryTypeInstances`, `ExportLibraryTypeVersion`, `EditLibraryType`, `CreateLibraryTypeVersionFromDocument`, `ReleaseLibraryType`, `DiscardLibraryType` |
 | Multiuser                     | `GetMarkedObjects`, `CheckIsUpToDate`                                                                                                              |
 | Block documents (V20+)        | `ExportAsDocuments`, `ExportBlocksAsDocuments`                                                 |
 | Type documents (V21+)         | `ExportTypeAsDocuments`, `ExportTypesAsDocuments`                                                                                                  |
