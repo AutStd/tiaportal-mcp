@@ -17,6 +17,36 @@ Use the GetLibraryTypeInstances tool with these parameters:
 - softwarePath: {softwarePath}";
         }
 
+        [McpServerPrompt(Name = "GetLibraryTypeVersions"), Description("List the versions of library types and what still uses them")]
+        public static string GetLibraryTypeVersions(
+            [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
+            [Description("typeName: optional, one type of the project library")] string typeName = "",
+            [Description("folderPath: optional, a folder of the project library")] string folderPath = "")
+        {
+            return $@"List the versions of project library types with their instances, dependent type versions and master copies. Run it before CleanUpLibraryTypes to see which versions would be removed.
+
+Use the GetLibraryTypeVersions tool with these parameters:
+- softwarePath: {softwarePath}
+- typeName: {typeName}
+- folderPath: {folderPath}";
+        }
+
+        [McpServerPrompt(Name = "CleanUpLibraryTypes"), Description("Remove unused versions of library types (requires '--allow-write')")]
+        public static string CleanUpLibraryTypes(
+            [Description("typeNames: optional, comma separated types of the project library")] string typeNames = "",
+            [Description("folderPath: optional, a folder of the project library")] string folderPath = "")
+        {
+            return $@"Remove the unused versions of the selected project library types (requires the server started with '--allow-write').
+
+Notes:
+- Check first with GetLibraryTypeVersions which versions are unused
+- The default version of each type is always kept, no type is deleted
+
+Use the CleanUpLibraryTypes tool with these parameters:
+- typeNames: {typeNames}
+- folderPath: {folderPath}";
+        }
+
         [McpServerPrompt(Name = "ExportLibraryTypeVersion"), Description("Export a library type version as documents with meta file")]
         public static string ExportLibraryTypeVersion(
             [Description("typeName: name of the type in the project library")] string typeName,

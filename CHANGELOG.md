@@ -49,6 +49,18 @@
   the export lists the written files (`.xml`, `.libinfo`, `.libint`) under `files`. Openness
   refuses to overwrite existing documents, so export each version into a new directory.
 
+- __Clean up library type versions__: `GetLibraryTypeVersions` lists the versions of one type, the
+  types below a library folder or all types, each with its instances in the PLC software,
+  dependent type versions (`LibraryTypeVersion.Dependents`) and master copies
+  (`MasterCopiesContainingInstances`), and flags `isUnused` and `wouldBeCleanedUp`, read-only.
+  Instances in other PLCs or HMI devices are not counted; for type kinds other than blocks and
+  PLC data types (e.g. HMI types) `instancesCounted` is false and both flags stay null. With `--allow-write`,
+  `CleanUpLibraryTypes` removes the unused versions of the given types and/or folder through
+  `ProjectLibrary.CleanUpLibrary` with `CleanUpMode.PreserveDefaultVersionOfUnusedTypes`, so the
+  default version stays and no type is deleted; TIA Portal applies its own criteria for the whole
+  project. It reports the removed and the remaining versions. The whole library is not cleaned up
+  without a selection. The README now lists the library write tools as write tools.
+
 - __Preset tool arguments__: the new command line arguments `--project-path`, `--software-path`,
   `--export-path`, `--preserve-path` and `--with-dependencies` (the last two are flags, like `--allow-write`) preset the `path`, `softwarePath`, `exportPath`, `preservePath` and `withDependencies` arguments of every tool
   that declares them. A preset argument is no longer `required` in the tool schema and is filled in when
