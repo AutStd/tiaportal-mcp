@@ -31,6 +31,20 @@
   flag and state per type version. It also names libraries that are no longer open, and marks those
   that are open with their kind and path. Neither tool takes parameters.
 
+- __Library type versions__: edit typed objects without losing the connection to their library type.
+  `GetLibraryTypeInstances` lists the blocks and PLC data types of a PLC software that are connected
+  to a type of the project library (`LibraryTypeInstanceInfo` service), read-only.
+  `ExportLibraryTypeVersion` exports one type version as documents with its library meta file
+  (`LibraryExportOptions.WithLibraryVersionInfoFile`). With `--allow-write`: `EditLibraryType`
+  creates an in-work version with the object as test instance (`LibraryTypeVersion.Edit`),
+  `CreateLibraryTypeVersionFromDocument` creates or overrides the in-work version from documents
+  (`LibraryTypeVersionComposition.CreateFromDocuments`, `CreateOptions.Override`),
+  `ReleaseLibraryType` releases it with version number, author and comment, `DiscardLibraryType`
+  discards it and reports the version the instances use again. Only the project library is
+  supported, as in Openness. Version entries carry the comment per language (`{"de-AT": "…"}`);
+  the export lists the written files (`.xml`, `.libinfo`, `.libint`) under `files`. Openness
+  refuses to overwrite existing documents, so export each version into a new directory.
+
 - __Preset tool arguments__: the new command line arguments `--project-path`, `--software-path`,
   `--export-path`, `--preserve-path` and `--with-dependencies` (the last two are flags, like `--allow-write`) preset the `path`, `softwarePath`, `exportPath`, `preservePath` and `withDependencies` arguments of every tool
   that declares them. A preset argument is no longer `required` in the tool schema and is filled in when
@@ -65,6 +79,18 @@
   XML fallback for them. The prompts were renamed the same way.
 
 ### Fixed
+
+- __Error messages without a reason__: `Operation.Run` wrapped every exception that was not a
+  `PortalException` as "<operation> failed" and dropped its message, against docs/error-model.md.
+  The message now carries the distinct messages of the exception chain, e.g.
+  "ExportLibraryTypeVersion failed: Error when calling method 'ExportAsDocuments' … The argument
+  'directoryInfo' cannot be a relative path." This applies to every tool that runs through
+  `Operation.Run`.
+
+- __`ExportLibraryTypeVersion` failed for every type__: on .NET Framework the `DirectoryInfo` returned
+  by `Directory.CreateDirectory` keeps only the last folder name as original path, and Openness
+  rejects it as relative. Export and `CreateLibraryTypeVersionFromDocument` now pass
+  `new DirectoryInfo(Path.GetFullPath(path))`.
 
 - __Block and type names with characters that are invalid in a file name__: TIA Portal allows names such as
   `T_Data->HMI` or `GTS_EQ_I/FLower`, but the exports used the name as the file name. On .NET Framework a `>`,

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 
 namespace TiaMcpServer.Siemens
 {
@@ -98,8 +99,9 @@ namespace TiaMcpServer.Siemens
             Exception ex,
             (string Key, object? Value)[] context)
         {
+            // The reason of the inner exception goes into the message, see docs/error-model.md.
             var pex = ex as PortalException
-                      ?? new PortalException(failCode, $"{operation} failed", null, ex);
+                      ?? new PortalException(failCode, $"{operation} failed: {GetReason(ex)}", null, ex);
 
             // Inner frames win: an inner Run already recorded the most specific context.
             foreach (var (key, value) in context)
@@ -122,6 +124,25 @@ namespace TiaMcpServer.Siemens
             }
 
             return pex;
+        }
+
+        /// <summary>
+        /// Joins the distinct messages of the exception chain, because Openness often puts the
+        /// actual reason into an inner exception.
+        /// </summary>
+        private static string GetReason(Exception ex)
+        {
+            var messages = new List<string>();
+            for (var current = ex; current != null; current = current.InnerException)
+            {
+                var message = current.Message?.Trim();
+                if (!string.IsNullOrEmpty(message) && !messages.Contains(message!))
+                {
+                    messages.Add(message!);
+                }
+            }
+
+            return messages.Count > 0 ? string.Join(" -> ", messages) : ex.GetType().Name;
         }
     }
 }
