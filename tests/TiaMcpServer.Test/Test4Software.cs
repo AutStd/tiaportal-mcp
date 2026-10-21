@@ -525,6 +525,96 @@ namespace TiaMcpServer.Test
             }
         }
 
+        /// <summary>
+        /// ExportOpcUaXml writes the OPC UA data of one PLC as '&lt;exportPath&gt;/&lt;softwarePath&gt;/OPC UA/&lt;PLC name&gt;.xml'.
+        /// Needs the OPC UA export provider, so it is inconclusive when TIA Portal does not offer it.
+        /// </summary>
+        [TestMethod]
+        [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, Settings.Project1ExportPath0)]
+        public void Test_426_ExportOpcUaXml(string projectPath, string softwarePath, string exportPath)
+        {
+            if (_portal == null)
+            {
+                Assert.Fail("TiaPortal instance is not initialized");
+            }
+
+            var softwareRoot = Portal.ResolveSoftwareRoot(exportPath, softwarePath);
+
+            Assert.IsTrue(Common.OpenProject(_portal, projectPath), "Failed to open the project");
+
+            try
+            {
+                string plcName;
+                string filePath;
+
+                try
+                {
+                    var (plc, file) = _portal.ExportOpcUaXml(softwarePath, exportPath);
+                    plcName = plc.Name;
+                    filePath = file;
+                }
+                catch (PortalException ex) when (ex.Code == PortalErrorCode.NotSupported)
+                {
+                    Assert.Inconclusive(ex.Message);
+                    return;
+                }
+
+                Console.WriteLine($"Exported OPC UA data of '{softwarePath}': {filePath}");
+
+                Assert.IsTrue(File.Exists(filePath), "The XML file was not written");
+                Assert.IsTrue(new FileInfo(filePath).Length > 0, "The XML file is empty");
+                Assert.AreEqual(FileNames.Safe(plcName) + ".xml", Path.GetFileName(filePath), "The file is named after the PLC");
+                Assert.AreEqual(Path.Combine(softwareRoot, "OPC UA"), Path.GetDirectoryName(filePath), "The file lands in the 'OPC UA' folder below <exportPath>/<softwarePath>");
+            }
+            finally
+            {
+                Common.CloseProject(_portal, projectPath);
+                DeleteTempDirectory(softwareRoot);
+            }
+        }
+
+        /// <summary>
+        /// An unknown PLC software is reported as NotFound before anything is written.
+        /// </summary>
+        [TestMethod]
+        [DataRow(Settings.Project1ProjectPath, "NoSuchPlc", Settings.Project1ExportPath0)]
+        public void Test_427_ExportOpcUaXml_UnknownSoftwareIsNotFound(string projectPath, string softwarePath, string exportPath)
+        {
+            if (_portal == null)
+            {
+                Assert.Fail("TiaPortal instance is not initialized");
+            }
+
+            var softwareRoot = Portal.ResolveSoftwareRoot(exportPath, softwarePath);
+
+            Assert.IsTrue(Common.OpenProject(_portal, projectPath), "Failed to open the project");
+
+            try
+            {
+                PortalException? thrown = null;
+
+                try
+                {
+                    _portal.ExportOpcUaXml(softwarePath, exportPath);
+                }
+                catch (PortalException ex)
+                {
+                    thrown = ex;
+                }
+
+                Assert.IsNotNull(thrown, "Exporting an unknown PLC must throw a PortalException");
+                Assert.AreEqual(PortalErrorCode.NotFound, thrown!.Code, "Error code mismatch");
+                Assert.IsFalse(
+                    Directory.Exists(softwareRoot) && Directory.GetFiles(softwareRoot, "*.*", SearchOption.AllDirectories).Length > 0,
+                    "Nothing may be written for an unknown PLC");
+            }
+            finally
+            {
+                Common.CloseProject(_portal, projectPath);
+                DeleteTempDirectory(softwareRoot);
+            }
+        }
+
         [TestMethod]
         [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, Settings.Project1ExportPath0, "0_OBs/Main_1", true)]
         [DataRow(Settings.Project1ProjectPath, Settings.Project1PlcSoftwarePath0, Settings.Project1ExportPath0, "0_OBs/Main_1", false)]
