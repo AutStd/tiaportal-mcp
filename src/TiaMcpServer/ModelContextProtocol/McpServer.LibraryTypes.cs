@@ -41,6 +41,60 @@ namespace TiaMcpServer.ModelContextProtocol
             }
         }
 
+        [McpServerTool(Name = "GetLibraryTypeVersions", Title = "Get library type versions", ReadOnly = true, OpenWorld = false, UseStructuredContent = true), Description("List the versions of project library types with their instances in the PLC software, dependent type versions and master copies, and whether CleanUpLibraryTypes would remove them. Select one type, a library folder or all types")]
+        public static ResponseLibraryTypeVersions GetLibraryTypeVersions(
+            [Description("softwarePath: defines the path in the project structure to the PLC software whose instances are counted")] string softwarePath,
+            [Description("typeName: optional, one type of the project library")] string typeName = "",
+            [Description("folderPath: optional, a folder of the project library, e.g. 'Z-LIB PLC Types/MODE (Betriebsarten)'; empty with empty typeName lists all types")] string folderPath = "")
+        {
+            try
+            {
+                var items = Portal.GetLibraryTypeVersions(softwarePath, typeName, folderPath);
+
+                return new ResponseLibraryTypeVersions
+                {
+                    Message = $"{items.Count} versions found, {items.Count(i => i.WouldBeCleanedUp == true)} unused besides the default version. Instances outside '{softwarePath}' are not counted; for {items.Count(i => !i.InstancesCounted)} versions of other type kinds (e.g. HMI) the use is unknown",
+                    Items = items,
+                    Meta = Ok(new JsonObject
+                    {
+                        ["totalVersions"] = items.Count,
+                        ["unused"] = items.Count(i => i.IsUnused == true),
+                        ["wouldBeCleanedUp"] = items.Count(i => i.WouldBeCleanedUp == true),
+                        ["notCounted"] = items.Count(i => !i.InstancesCounted)
+                    })
+                };
+            }
+            catch (PortalException pex)
+            {
+                throw new McpException(pex.Message, pex);
+            }
+            catch (Exception ex) when (ex is not McpException)
+            {
+                throw new McpException($"Unexpected error retrieving library type versions: {ex.Message}", ex);
+            }
+        }
+
+        [WriteTool]
+        [McpServerTool(Name = "CleanUpLibraryTypes", Title = "Clean up library types", Destructive = true, Idempotent = true, OpenWorld = false, UseStructuredContent = true),
+         Description("Remove the unused versions of the selected project library types with the TIA Portal 'Clean up library' function; the default version of each type is always kept. Check first with GetLibraryTypeVersions")]
+        public static ResponseLibraryCleanUp CleanUpLibraryTypes(
+            [Description("typeNames: optional, comma separated types of the project library")] string typeNames = "",
+            [Description("folderPath: optional, a folder of the project library whose types are cleaned up")] string folderPath = "")
+        {
+            return Guarded(nameof(CleanUpLibraryTypes), () =>
+            {
+                var result = Portal.CleanUpLibraryTypes(typeNames, folderPath);
+
+                return new ResponseLibraryCleanUp
+                {
+                    Message = $"{result.Removed.Count} unused versions removed. {SaveHint}",
+                    Removed = result.Removed,
+                    Remaining = result.Remaining,
+                    Meta = OkMeta()
+                };
+            });
+        }
+
         [McpServerTool(Name = "ExportLibraryTypeVersion", Title = "Export library type version", ReadOnly = true, OpenWorld = false, UseStructuredContent = true), Description("Export one version of a project library type as documents with its library meta file, as input for CreateLibraryTypeVersionFromDocument")]
         public static ResponseLibraryTypeExport ExportLibraryTypeVersion(
             [Description("typeName: name of the type in the project library")] string typeName,
