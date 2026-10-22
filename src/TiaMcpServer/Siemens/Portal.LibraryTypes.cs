@@ -86,6 +86,20 @@ namespace TiaMcpServer.Siemens
         public bool? WouldBeCleanedUp { get; set; }
     }
 
+    /// <summary>Result of renaming a library type: the instances in the PLC software before and after.</summary>
+    public class LibraryTypeRenameResult
+    {
+        public string OldName { get; set; } = "";
+
+        public string NewName { get; set; } = "";
+
+        public bool Harmonized { get; set; }
+
+        public List<string> InstancesBefore { get; set; } = new List<string>();
+
+        public List<string> InstancesAfter { get; set; } = new List<string>();
+    }
+
     /// <summary>Result of a library clean-up: the versions removed and the versions left.</summary>
     public class LibraryCleanUpResult
     {
@@ -157,6 +171,59 @@ namespace TiaMcpServer.Siemens
                     }
 
                     return result;
+                });
+        }
+
+        /// <summary>
+        /// Renames a type of the project library and, with harmonize, renames its instances in the
+        /// PLC software to the new type name ("Harmonize project", names only). The instances stay
+        /// connected to the type.
+        /// </summary>
+        public LibraryTypeRenameResult RenameLibraryType(string typeName, string newName, string softwarePath, bool harmonize)
+        {
+            _logger?.LogInformation($"Renaming library type {typeName} to {newName}...");
+
+            return Operation.Run(_logger, nameof(RenameLibraryType), PortalErrorCode.RenameFailed,
+                () =>
+                {
+                    var project = _project ?? throw new PortalException(PortalErrorCode.InvalidState, "No project is open in TIA Portal");
+                    if (string.IsNullOrWhiteSpace(newName))
+                    {
+                        throw new PortalException(PortalErrorCode.InvalidParams, "newName must not be empty");
+                    }
+
+                    var type = GetLibraryTypeOrThrow(typeName);
+                    if (FindLibraryType(project.ProjectLibrary.TypeFolder, newName) != null)
+                    {
+                        throw new PortalException(PortalErrorCode.InvalidParams, $"The project library already contains a type named '{newName}'");
+                    }
+
+                    if (type.Versions.Any(v => v.State == LibraryTypeVersionState.InWork))
+                    {
+                        throw new PortalException(PortalErrorCode.InvalidState,
+                            $"Library type '{typeName}' has a version in work. Release or discard it first");
+                    }
+
+                    var software = GetPlcSoftwareOrThrow(softwarePath);
+                    var before = GetInstancePathsOfType(software, type);
+
+                    type.Name = newName;
+
+                    if (harmonize)
+                    {
+                        var scope = software as IUpdateProjectScope
+                            ?? throw new PortalException(PortalErrorCode.InvalidState, $"'{softwarePath}' cannot be used as harmonize scope");
+                        project.ProjectLibrary.HarmonizeProject(new ILibraryTypeOrFolderSelection[] { type }, new[] { scope }, HarmonizeProjectOptions.HarmonizeNames);
+                    }
+
+                    return new LibraryTypeRenameResult
+                    {
+                        OldName = typeName,
+                        NewName = type.Name,
+                        Harmonized = harmonize,
+                        InstancesBefore = before,
+                        InstancesAfter = GetInstancePathsOfType(software, type)
+                    };
                 });
         }
 
@@ -528,6 +595,15 @@ namespace TiaMcpServer.Siemens
             }
 
             return result;
+        }
+
+        /// <summary>Paths of the blocks and PLC data types of the PLC software connected to any version of the type.</summary>
+        private List<string> GetInstancePathsOfType(PlcSoftware software, LibraryType type)
+        {
+            var instances = GetInstancePathsByVersion(software);
+            return type.Versions
+                .SelectMany(v => instances.TryGetValue(v.Guid, out var paths) ? paths : new List<string>())
+                .ToList();
         }
 
         private static LibraryTypeVersionUsage ToVersionUsage(LibraryTypeVersion version, Dictionary<Guid, List<string>> instances)

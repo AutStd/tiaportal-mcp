@@ -49,6 +49,12 @@
   the export lists the written files (`.xml`, `.libinfo`, `.libint`) under `files`. Openness
   refuses to overwrite existing documents, so export each version into a new directory.
 
+- __Rename library types__: with `--allow-write`, `RenameLibraryType` renames a type of the project
+  library (`LibraryType.Name`) and, unless `harmonize` is false, renames its instances in the given
+  PLC software through `ProjectLibrary.HarmonizeProject` with `HarmonizeProjectOptions.HarmonizeNames`,
+  so they stay connected to the type. It refuses a name that is already used in the project library
+  and a type with a version in work, and reports the instance paths before and after.
+
 - __Clean up library type versions__: `GetLibraryTypeVersions` lists the versions of one type, the
   types below a library folder or all types, each with its instances in the PLC software,
   dependent type versions (`LibraryTypeVersion.Dependents`) and master copies

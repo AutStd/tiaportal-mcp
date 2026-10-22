@@ -18,6 +18,11 @@ namespace TiaMcpServer.ModelContextProtocol
         public IEnumerable<LibraryTypeVersionUsage>? Items { get; set; }
     }
 
+    public class ResponseLibraryTypeRename : ResponseMessage
+    {
+        public LibraryTypeRenameResult? Result { get; set; }
+    }
+
     public class ResponseLibraryCleanUp : ResponseMessage
     {
         public IEnumerable<string>? Removed { get; set; }
