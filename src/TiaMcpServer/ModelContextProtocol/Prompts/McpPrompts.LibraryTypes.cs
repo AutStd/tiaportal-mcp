@@ -31,6 +31,26 @@ Use the GetLibraryTypeVersions tool with these parameters:
 - folderPath: {folderPath}";
         }
 
+        [McpServerPrompt(Name = "RenameLibraryType"), Description("Rename a library type and its instances (requires '--allow-write')")]
+        public static string RenameLibraryType(
+            [Description("typeName: current name of the type in the project library")] string typeName,
+            [Description("newName: new name of the type")] string newName,
+            [Description("softwarePath: defines the path in the project structure to the PLC software")] string softwarePath,
+            [Description("harmonize: optional, false leaves the instance names")] bool harmonize = true)
+        {
+            return $@"Rename a type of the project library and harmonize the names of its instances (requires the server started with '--allow-write').
+
+Notes:
+- No version of the type may be in work
+- Compile the PLC software afterwards; check the types that use it with GetLibraryTypeVersions
+
+Use the RenameLibraryType tool with these parameters:
+- typeName: {typeName}
+- newName: {newName}
+- softwarePath: {softwarePath}
+- harmonize: {harmonize}";
+        }
+
         [McpServerPrompt(Name = "CleanUpLibraryTypes"), Description("Remove unused versions of library types (requires '--allow-write')")]
         public static string CleanUpLibraryTypes(
             [Description("typeNames: optional, comma separated types of the project library")] string typeNames = "",

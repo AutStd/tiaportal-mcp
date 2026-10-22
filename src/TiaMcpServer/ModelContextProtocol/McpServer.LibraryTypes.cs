@@ -75,6 +75,28 @@ namespace TiaMcpServer.ModelContextProtocol
         }
 
         [WriteTool]
+        [McpServerTool(Name = "RenameLibraryType", Title = "Rename library type", Destructive = true, OpenWorld = false, UseStructuredContent = true),
+         Description("Rename a type of the project library and harmonize the names of its instances in the PLC software, so they stay connected to the type")]
+        public static ResponseLibraryTypeRename RenameLibraryType(
+            [Description("typeName: current name of the type in the project library")] string typeName,
+            [Description("newName: new name of the type")] string newName,
+            [Description("softwarePath: defines the path in the project structure to the PLC software whose instances are renamed")] string softwarePath,
+            [Description("harmonize: optional, false renames only the library type and leaves the instance names")] bool harmonize = true)
+        {
+            return Guarded(nameof(RenameLibraryType), () =>
+            {
+                var result = Portal.RenameLibraryType(typeName, newName, softwarePath, harmonize);
+
+                return new ResponseLibraryTypeRename
+                {
+                    Message = $"Library type '{typeName}' renamed to '{result.NewName}', {result.InstancesAfter.Count} instances in '{softwarePath}'. Compile the PLC software. {SaveHint}",
+                    Result = result,
+                    Meta = OkMeta()
+                };
+            });
+        }
+
+        [WriteTool]
         [McpServerTool(Name = "CleanUpLibraryTypes", Title = "Clean up library types", Destructive = true, Idempotent = true, OpenWorld = false, UseStructuredContent = true),
          Description("Remove the unused versions of the selected project library types with the TIA Portal 'Clean up library' function; the default version of each type is always kept. Check first with GetLibraryTypeVersions")]
         public static ResponseLibraryCleanUp CleanUpLibraryTypes(
